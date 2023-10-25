@@ -286,8 +286,8 @@ def excel_view(request, sheet_name):
                                 closing_balance = obj.get('closing_balance', 0.0)
                             )
                             excel_data.save()
-                        except Exception as e:
-                            print(e)
+                        except:
+                            pass
 
                         # Handle the weight when appending to the sheet
                         if weight == "":
