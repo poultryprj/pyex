@@ -168,7 +168,8 @@ def excel_view(request, sheet_name):
                 return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
         ### if sheetname Summary_data_01
-        else:
+        sheet_name_trimed = sheet_name[:13]
+        if "Summary_data_" == sheet_name_trimed:
             try:
                 data = json.loads(request.body.decode("utf-8"))
                 json_objects = data.get('json_objects')
@@ -181,7 +182,7 @@ def excel_view(request, sheet_name):
 
                 # Define the default columns outside of the if-else block
                 default_columns = ['shop_code', '   date   ','opening_balance', 
-                                   'product_id', 'weight', 'quantity', 'daily_rate', 'rate', 'amount', 'paid_amount', 'closing_balance']
+                                   'product_id', 'weight', 'quantity', 'daily_rate', 'rate', 'amount', 'paid_amount', 'closing_balance', 'average_rate', 'sum_of_weight', 'sum_of_quantity']
 
                 # Load the Excel workbook using openpyxl
                 workbook = load_workbook(filename=file_path)
@@ -218,7 +219,7 @@ def excel_view(request, sheet_name):
                         new_sheet.append(default_columns)
 
                         # Set column widths for default columns
-                        for column_letter, column_name in zip('ABCDEFGHIJKLM', default_columns):
+                        for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRST', default_columns):
                             column = new_sheet.column_dimensions[column_letter]
                             # Adjust the width as needed
                             column.width = len(column_name) + 2
@@ -314,7 +315,8 @@ def excel_view(request, sheet_name):
                     return Response({"error": "Column names in the data do not match the existing sheet"}, status=status.HTTP_400_BAD_REQUEST)
             except Exception as e:
                 return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        else:
+            return Response({"error": "please enter valid excel sheet name..!!"}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
 def read_excel(request, sheet_name):
