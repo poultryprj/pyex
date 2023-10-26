@@ -166,7 +166,151 @@ def excel_view(request, sheet_name):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
-            
+@api_view(['POST'])
+def create_daily_summary_sheet(request, sheet_name):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+            json_objects = data.get('json_objects')
+
+            # Provide the full path to your Excel file
+            file_path = 'main.xlsx'
+
+            if not json_objects:
+                return Response({"error": "JSON objects are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Define the default columns outside of the if-else block
+            default_columns = ['   date   ', 'opening_balance', 'shop_code',
+                            'product_id', 'weight', 'quantity', 'rate', 'amount', 'paid_amount', 'closing_balance']
+
+            # Load the Excel workbook using openpyxl
+            workbook = load_workbook(filename=file_path)
+
+            # Find the current sheet or create it if it doesn't exist
+            if sheet_name not in workbook.sheetnames:
+                if len(workbook.sheetnames) == 0:
+                    # Create the first sheet
+                    new_sheet_name = "Daily_summary_01"
+                    new_sheet = workbook.create_sheet(title=new_sheet_name)
+                    # Add default columns to the new sheet
+                    new_sheet.append(default_columns)
+
+                    # Set column widths for default columns
+                    for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRS', default_columns):
+                        column = new_sheet.column_dimensions[column_letter]
+                        # Adjust the width as needed
+                        column.width = len(column_name) + 2
+
+                    # Set the alignment for the header row (centered)
+                    header_row = new_sheet[1]
+                    for cell in header_row:
+                        cell.alignment = Alignment(horizontal='center')
+                else:
+                    # Find the next available sheet name with a sequential number
+                    sheet_number = 1
+                    while True:
+                        new_sheet_name = f"Daily_summary_{sheet_number:02d}"
+                        if new_sheet_name not in workbook.sheetnames:
+                            break
+                        sheet_number += 1
+                    new_sheet = workbook.create_sheet(title=new_sheet_name)
+                    # Add default columns to the new sheet
+                    new_sheet.append(default_columns)
+
+                    # Set column widths for default columns
+                    for column_letter, column_name in zip('ABCDEFGHIJKLM', default_columns):
+                        column = new_sheet.column_dimensions[column_letter]
+                        # Adjust the width as needed
+                        column.width = len(column_name) + 2
+
+                    # Set the alignment for the header row (centered)
+                    header_row = new_sheet[1]
+                    for cell in header_row:
+                        cell.alignment = Alignment(horizontal='center')
+
+                sheet = new_sheet
+            else:
+                sheet = workbook[sheet_name]
+
+            # Check if column names already exist in the sheet
+            column_names = [cell.value for cell in sheet[1]]
+
+            # Get the current date and time in UTC+05:30 (IST)
+            # Define the IST timezone
+            ist = pytz.timezone('Asia/Kolkata')
+
+            # Get the current date and time in the IST timezone
+            current_datetime = datetime.now(ist)
+
+            # Format current_date as "dd/mm/yyyy" and current_time as "HH:mm:ss"
+            current_date = current_datetime.strftime(
+                '%d/%m/%Y')  # Format date as dd/mm/yyyy
+
+            # Append data only if the column names match and product_id is 1 or 2
+            if column_names == default_columns:
+                # ...
+                # Inside the loop that processes JSON objects
+                for obj in json_objects:
+                    product_id = obj.get('product_id', 0)
+                    if product_id not in (1, 2):
+                        return Response({"error": "Please enter a valid product_id (1 or 2)"}, status=status.HTTP_400_BAD_REQUEST)
+
+                    if product_id == 2:  # product_id == 2  for bird and weight not needed
+                        weight = obj.get('weight')
+                        if weight:
+                            return Response({"error": "please remove weight field..!!"}, status=status.HTTP_400_BAD_REQUEST)
+                    else:
+                        # product_id == 1  for eggs and weight needed
+                        weight = obj.get('weight')
+                        if not weight:
+                            return Response({"error": "please enter weight..!!"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                    try:
+                        excel_data = ExcelData(
+                            date=current_datetime.now(),
+                            opening_balance=obj.get('opening_balance', 0),
+                            shop_code=obj.get('shop_code', 0),
+                            product_id=product_id,
+                            weight=weight,  # Use the value set above
+                            quantity=obj.get('quantity', 0),
+                            rate=obj.get('rate', 0.0),                            
+                            amount=obj.get('amount', 0.0),
+                            paid_amount=obj.get('paid_amount', 0.0),
+                            closing_balance=obj.get('closing_balance', 0.0)
+                        )
+                        excel_data.save()
+                    except Exception as e:
+                        pass
+
+                    # Handle the weight when appending to the sheet
+                    if weight == "":
+                        row = [current_date, excel_data.opening_balance, obj.get('shop_code', 0), excel_data.product_id, "", obj.get(
+                            'quantity', 0.0), obj.get('rate', 0.0), excel_data.amount, obj.get('paid_amount', 0.0), obj.get('closing_balance', 0.0)]
+                    else:
+                        row = [current_date, excel_data.opening_balance, obj.get('shop_code', 0), excel_data.product_id, weight, obj.get(
+                            'quantity', 0.0), obj.get('rate', 0.0), excel_data.amount, obj.get('paid_amount', 0.0), obj.get('closing_balance', 0.0)]
+
+                    # Append data to the sheet
+                    sheet.append(row)
+
+                    # Create an Alignment object to center align text
+                    alignment = Alignment(horizontal='center')
+
+                    # Apply the alignment to all cells in the last row of the sheet
+                    for cell in sheet[sheet.max_row]:
+                        cell.alignment = alignment
+
+                # Save the updated Excel file
+                workbook.save(file_path)
+                return Response({'message': 'Data appended successfully'}, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": "Column names in the data do not match the existing sheet"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
         # ### if sheetname Summary_data_01
         # sheet_name_trimed = sheet_name[:13]
         # if "Summary_data_" == sheet_name_trimed:
