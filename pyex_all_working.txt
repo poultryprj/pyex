@@ -1,3 +1,7 @@
+=IF(COUNTIFS(Raw_data_01!A:A,$A2,Raw_data_01!D:D,1)>0,AVERAGEIFS(Raw_data_01!E:E,Raw_data_01!A:A,$A2,Raw_data_01!D:D,1),"")
+
+
+
 from django.shortcuts import render
 import json
 from openpyxl import load_workbook
@@ -169,7 +173,6 @@ def excel_view(request, sheet_name):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
-    
 from datetime import datetime, timedelta
 from openpyxl import load_workbook
 from openpyxl.styles import Alignment
@@ -189,18 +192,12 @@ def create_daily_summary_sheet(request, sheet_name):
 
             # Define the default columns
             default_columns = [
-                'Date',
-                'product_1',
+                '   date   ',
+                'product_id',
                 'weight',
                 'quantity',
                 'rate',
                 'amount',
-                '',
-                'product_2',
-                'quantity',
-                'rate',
-                'amount',
-                '',
                 'opening_balance',
                 'paid_amount',
                 'closing_balance'
@@ -217,7 +214,7 @@ def create_daily_summary_sheet(request, sheet_name):
                 new_sheet.append(default_columns)
 
                 # Set column widths for default columns
-                for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRST', default_columns):
+                for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRSTUVWXYZ', default_columns):
                     column = new_sheet.column_dimensions[column_letter]
                     # Adjust the width as needed
                     column.width = max(len(column_name) + 2, 12)  # Minimum width of 12
@@ -243,11 +240,22 @@ def create_daily_summary_sheet(request, sheet_name):
             current_date = financial_year_start
             while current_date <= financial_year_end:
                 # Create a new row for each date
-                row = [current_date.strftime('%d/%m/%Y'), 1, '', '', '', '', '', 2, '', '', '', '']
+                row = [current_date.strftime('%d/%m/%Y')]
                 sheet.append(row)
+
+                # Create an Alignment object to center align text for the date cell
+                alignment = Alignment(horizontal='center')
+                sheet.cell(row=sheet.max_row, column=1).alignment = alignment
 
                 # Move to the next date
                 current_date += timedelta(days=1)
+
+                # Add an empty row (a row of empty strings)
+                empty_row = [''] * len(default_columns)
+                sheet.append(empty_row)
+
+                # Merge the cell for the date cell and the blank row below it
+                sheet.merge_cells(start_row=sheet.max_row - 1, start_column=1, end_row=sheet.max_row, end_column=1)
 
             # Save the updated Excel file
             workbook.save(file_path)
@@ -255,65 +263,4 @@ def create_daily_summary_sheet(request, sheet_name):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-from datetime import datetime, timedelta
-from openpyxl import load_workbook
-from openpyxl.styles import Alignment
-from openpyxl.utils import get_column_letter
-from django.http import JsonResponse
-from rest_framework.decorators import api_view
-import json
-from rest_framework import status
-
-@api_view(['POST'])
-def insert_formulas_to_weight_column(request, sheet_name, file_path):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body.decode("utf-8"))
-
-            # Load the Excel workbook using openpyxl
-            workbook = load_workbook(filename=file_path)
-
-            if sheet_name not in workbook.sheetnames:
-                return JsonResponse({'error': 'Sheet does not exist'}, status=status.HTTP_400_BAD_REQUEST)
-
-            sheet = workbook[sheet_name]
-
-            # Check if the "weight" column exists, and if not, create it
-            weight_column = None
-            for col, column_name in enumerate(sheet.iter_rows(min_row=1, max_row=1, values_only=True)):
-                col += 1  # Adjust for 1-based indexing
-                for column in column_name:
-                    if column == 'weight':
-                        print(column)
-                        weight_column = get_column_letter(col)
-
-            if weight_column is None:
-                return JsonResponse({'error': 'Weight column name does not exist'}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Define the financial year start and end dates
-            financial_year_start = datetime(2023, 4, 1)
-            financial_year_end = datetime(2024, 3, 31)
-
-            # Iterate over each date within the financial year
-            current_date = financial_year_start
-            row_number = 2  # Start from the second row (1-based index)
-
-            while current_date <= financial_year_end:
-                # Append the formula to the "weight" column for each row
-                date_cell = f"A{row_number}"
-                formula = (
-                    f'=IF(COUNTIFS(A:A,{date_cell},D:D,1)>0,'
-                    f'AVERAGEIFS(E:E,A:A,{date_cell},D:D,1),"")'
-                )
-                sheet[f"{weight_column}{row_number}"] = formula
-
-                # Move to the next date and row
-                current_date += timedelta(days=1)
-                row_number += 1
-
-            # Save the updated Excel file
-            workbook.save(file_path)
-            return JsonResponse({'message': 'Formulas inserted successfully'})
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
