@@ -254,3 +254,69 @@ def create_daily_summary_sheet(request, sheet_name):
             return JsonResponse({'message': 'Data appended successfully'}, status=status.HTTP_200_OK)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+from datetime import datetime, timedelta
+from openpyxl import load_workbook
+from openpyxl.styles import Alignment
+from openpyxl.utils import get_column_letter
+from django.http import JsonResponse
+from rest_framework.decorators import api_view
+import json
+from rest_framework import status
+
+@api_view(['POST'])
+def insert_formulas_to_weight_column(request, sheet_name, file_path):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+
+            # Load the Excel workbook using openpyxl
+            workbook = load_workbook(filename=file_path)
+
+            if sheet_name not in workbook.sheetnames:
+                return JsonResponse({'error': 'Sheet does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+
+            sheet = workbook[sheet_name]
+
+            # Check if the "weight" column exists, and if not, create it
+            weight_column = None
+            for col, column_name in enumerate(sheet.iter_rows(min_row=1, max_row=1, values_only=True)):
+                col += 1  # Adjust for 1-based indexing
+                print(column_name)
+                if column_name[0] == 'weight':
+                    weight_column = get_column_letter(col)
+
+            if weight_column is None:
+                # "weight" column doesn't exist, create it
+                sheet.insert_cols(3)  # Insert a new column at the third position
+                sheet.cell(row=1, column=3, value='weight')
+                weight_column = 'C'  # New "weight" column is in column C
+
+            # Define the financial year start and end dates
+            financial_year_start = datetime(2023, 4, 1)
+            financial_year_end = datetime(2024, 3, 31)
+
+            # Iterate over each date within the financial year
+            current_date = financial_year_start
+            row_number = 2  # Start from the second row (1-based index)
+
+            while current_date <= financial_year_end:
+                # Append the formula to the "weight" column for each row
+                date_cell = f"A{row_number}"
+                formula = (
+                    f'=IF(COUNTIFS(A:A,{date_cell},D:D,1)>0,'
+                    f'AVERAGEIFS(E:E,A:A,{date_cell},D:D,1),"")'
+                )
+                sheet[f"{weight_column}{row_number}"] = formula
+
+                # Move to the next date and row
+                current_date += timedelta(days=1)
+                row_number += 1
+
+            # Save the updated Excel file
+            workbook.save(file_path)
+            return JsonResponse({'message': 'Formulas inserted successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
