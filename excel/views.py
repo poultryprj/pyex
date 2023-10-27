@@ -169,6 +169,7 @@ def excel_view(request, sheet_name):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
+    
 from datetime import datetime, timedelta
 from openpyxl import load_workbook
 from openpyxl.styles import Alignment
@@ -188,12 +189,18 @@ def create_daily_summary_sheet(request, sheet_name):
 
             # Define the default columns
             default_columns = [
-                '   date   ',
-                'product_id',
+                'Date',
+                'product_1',
                 'weight',
                 'quantity',
                 'rate',
                 'amount',
+                '',
+                'product_2',
+                'quantity',
+                'rate',
+                'amount',
+                '',
                 'opening_balance',
                 'paid_amount',
                 'closing_balance'
@@ -210,7 +217,7 @@ def create_daily_summary_sheet(request, sheet_name):
                 new_sheet.append(default_columns)
 
                 # Set column widths for default columns
-                for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRSTUVWXYZ', default_columns):
+                for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRST', default_columns):
                     column = new_sheet.column_dimensions[column_letter]
                     # Adjust the width as needed
                     column.width = max(len(column_name) + 2, 12)  # Minimum width of 12
@@ -236,27 +243,14 @@ def create_daily_summary_sheet(request, sheet_name):
             current_date = financial_year_start
             while current_date <= financial_year_end:
                 # Create a new row for each date
-                row = [current_date.strftime('%d/%m/%Y')]
+                row = [current_date.strftime('%d/%m/%Y'), 1, '', '', '', '', '', 2, '', '', '', '']
                 sheet.append(row)
-
-                # Create an Alignment object to center align text for the date cell
-                alignment = Alignment(horizontal='center')
-                sheet.cell(row=sheet.max_row, column=1).alignment = alignment
 
                 # Move to the next date
                 current_date += timedelta(days=1)
-
-                # Add an empty row (a row of empty strings)
-                empty_row = [''] * len(default_columns)
-                sheet.append(empty_row)
-
-                # Merge the cell for the date cell and the blank row below it
-                sheet.merge_cells(start_row=sheet.max_row - 1, start_column=1, end_row=sheet.max_row, end_column=1)
 
             # Save the updated Excel file
             workbook.save(file_path)
             return JsonResponse({'message': 'Data appended successfully'}, status=status.HTTP_200_OK)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    
