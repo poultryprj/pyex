@@ -170,27 +170,41 @@ def excel_view(request, sheet_name):
         
 
 
+from datetime import datetime, timedelta
+import pytz
+from openpyxl import load_workbook
+from openpyxl.styles import Alignment
+from django.http import JsonResponse
+from rest_framework.decorators import api_view
+from rest_framework import status
+import json
+
 @api_view(['POST'])
 def create_daily_summary_sheet(request, sheet_name):
     if request.method == 'POST':
         try:
             data = json.loads(request.body.decode("utf-8"))
-            json_objects = data.get('json_objects')
 
             # Provide the full path to your Excel file
             file_path = 'main.xlsx'
 
-            if not json_objects:
-                return JsonResponse({"error": "JSON objects are required."}, status=status.HTTP_400_BAD_REQUEST)
-
             # Define the default columns
-            default_columns = ['   date   ', 'opening_balance', 'shop_code',
-                               'product_id', 'weight', 'quantity', 'rate', 'amount', 'paid_amount', 'closing_balance']
+            default_columns = [
+                '   date   ',
+                'shop_code',
+                'product_id',
+                'weight',
+                'quantity',
+                'rate',
+                'amount',
+                'opening_balance',
+                'paid_amount',
+                'closing_balance'
+            ]
 
             # Load the Excel workbook using openpyxl
             workbook = load_workbook(filename=file_path)
 
-            # Find the current sheet or create it if it doesn't exist
             # Find the current sheet or create it if it doesn't exist
             if sheet_name not in workbook.sheetnames:
                 if len(workbook.sheetnames) == 0:
@@ -201,10 +215,10 @@ def create_daily_summary_sheet(request, sheet_name):
                     new_sheet.append(default_columns)
 
                     # Set column widths for default columns
-                    for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRST', default_columns):
+                    for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRSTUVWXYZ', default_columns):
                         column = new_sheet.column_dimensions[column_letter]
                         # Adjust the width as needed
-                        column.width = len(column_name) + 2
+                        column.width = max(len(column_name) + 2, 12)  # Minimum width of 12
 
                     # Set the alignment for the header row (centered)
                     header_row = new_sheet[1]
@@ -223,10 +237,10 @@ def create_daily_summary_sheet(request, sheet_name):
                     new_sheet.append(default_columns)
 
                     # Set column widths for default columns
-                    for column_letter, column_name in zip('ABCDEFGHIJKLM', default_columns):
+                    for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRSTUVWXYZ', default_columns):
                         column = new_sheet.column_dimensions[column_letter]
                         # Adjust the width as needed
-                        column.width = len(column_name) + 2
+                        column.width = max(len(column_name) + 2, 12)  # Minimum width of 12
 
                     # Set the alignment for the header row (centered)
                     header_row = new_sheet[1]
@@ -244,67 +258,21 @@ def create_daily_summary_sheet(request, sheet_name):
             financial_year_start = datetime(2023, 4, 1)
             financial_year_end = datetime(2024, 3, 31)
 
-            # Get the current date and time in UTC+05:30 (IST)
-            ist = pytz.timezone('Asia/Kolkata')
-
             # Iterate over each date within the financial year
             current_date = financial_year_start
             while current_date <= financial_year_end:
-                if column_names == default_columns:
-                    # Inside the loop that processes JSON objects
-                    for obj in json_objects:
-                        product_id = obj.get('product_id', 0)
-                        if product_id not in (1, 2):
-                            return JsonResponse({"error": "Please enter a valid product_id (1 or 2)"}, status=status.HTTP_400_BAD_REQUEST)
+                row = [current_date.strftime('%d/%m/%Y')]
+                sheet.append(row)
 
-                        if product_id == 2:
-                            weight = obj.get('weight')
-                            if weight:
-                                return JsonResponse({"error": "Please remove weight field..!!"}, status=status.HTTP_400_BAD_REQUEST)
-                        else:
-                            weight = obj.get('weight')
-                            if not weight:
-                                return JsonResponse({"error": "Please enter weight..!!"}, status=status.HTTP_400_BAD_REQUEST)
+                # Create an Alignment object to center align text
+                alignment = Alignment(horizontal='center')
 
-                        try:
-                            excel_data = ExcelData(
-                                date=current_date.strftime('%d/%m/%Y'),  # Format date as dd/mm/yyyy
-                                opening_balance=obj.get('opening_balance', 0),
-                                shop_code=obj.get('shop_code', 0),
-                                product_id=product_id,
-                                weight=weight,
-                                quantity=obj.get('quantity', 0),
-                                rate=obj.get('rate', 0.0),
-                                amount=obj.get('amount', 0.0),
-                                paid_amount=obj.get('paid_amount', 0.0),
-                                closing_balance=obj.get('closing_balance', 0.0)
-                            )
-                            excel_data.save()
-                        except Exception as e:
-                            pass
+                # Apply the alignment to all cells in the last row of the sheet
+                for cell in sheet[sheet.max_row]:
+                    cell.alignment = alignment
 
-                        # Handle the weight when appending to the sheet
-                        if weight == "":
-                            row = [current_date.strftime('%d/%m/%Y'), excel_data.opening_balance, obj.get('shop_code', 0),
-                                   excel_data.product_id, "", obj.get('quantity', 0.0), obj.get('rate', 0.0), excel_data.amount,
-                                   obj.get('paid_amount', 0.0), obj.get('closing_balance', 0.0)]
-                        else:
-                            row = [current_date.strftime('%d/%m/%Y'), excel_data.opening_balance, obj.get('shop_code', 0),
-                                   excel_data.product_id, weight, obj.get('quantity', 0.0), obj.get('rate', 0.0), excel_data.amount,
-                                   obj.get('paid_amount', 0.0), obj.get('closing_balance', 0.0)]
-
-                        # Append data to the sheet
-                        sheet.append(row)
-
-                        # Create an Alignment object to center align text
-                        alignment = Alignment(horizontal='center')
-
-                        # Apply the alignment to all cells in the last row of the sheet
-                        for cell in sheet[sheet.max_row]:
-                            cell.alignment = alignment
-
-                    # Move to the next date
-                    current_date += timedelta(days=1)
+                # Move to the next date
+                current_date += timedelta(days=1)
 
             # Save the updated Excel file
             workbook.save(file_path)
