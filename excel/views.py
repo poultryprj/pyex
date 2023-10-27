@@ -169,9 +169,7 @@ def excel_view(request, sheet_name):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
-
 from datetime import datetime, timedelta
-import pytz
 from openpyxl import load_workbook
 from openpyxl.styles import Alignment
 from django.http import JsonResponse
@@ -205,50 +203,27 @@ def create_daily_summary_sheet(request, sheet_name):
             # Load the Excel workbook using openpyxl
             workbook = load_workbook(filename=file_path)
 
-            # Find the current sheet or create it if it doesn't exist
             if sheet_name not in workbook.sheetnames:
-                if len(workbook.sheetnames) == 0:
-                    # Create the first sheet
-                    new_sheet_name = "Summary_data_01"
-                    new_sheet = workbook.create_sheet(title=new_sheet_name)
-                    # Add default columns to the new sheet
-                    new_sheet.append(default_columns)
+                # Create a new sheet with the provided sheet_name
+                new_sheet = workbook.create_sheet(title=sheet_name)
 
-                    # Set column widths for default columns
-                    for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRSTUVWXYZ', default_columns):
-                        column = new_sheet.column_dimensions[column_letter]
-                        # Adjust the width as needed
-                        column.width = max(len(column_name) + 2, 12)  # Minimum width of 12
+                # Add default columns to the new sheet
+                new_sheet.append(default_columns)
 
-                    # Set the alignment for the header row (centered)
-                    header_row = new_sheet[1]
-                    for cell in header_row:
-                        cell.alignment = Alignment(horizontal='center')
-                else:
-                    # Find the next available sheet name with a sequential number
-                    sheet_number = 1
-                    while True:
-                        new_sheet_name = f"Summary_data_{sheet_number:02d}"
-                        if new_sheet_name not in workbook.sheetnames:
-                            break
-                        sheet_number += 1
-                    new_sheet = workbook.create_sheet(title=new_sheet_name)
-                    # Add default columns to the new sheet
-                    new_sheet.append(default_columns)
+                # Set column widths for default columns
+                for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRSTUVWXYZ', default_columns):
+                    column = new_sheet.column_dimensions[column_letter]
+                    # Adjust the width as needed
+                    column.width = max(len(column_name) + 2, 12)  # Minimum width of 12
 
-                    # Set column widths for default columns
-                    for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRSTUVWXYZ', default_columns):
-                        column = new_sheet.column_dimensions[column_letter]
-                        # Adjust the width as needed
-                        column.width = max(len(column_name) + 2, 12)  # Minimum width of 12
-
-                    # Set the alignment for the header row (centered)
-                    header_row = new_sheet[1]
-                    for cell in header_row:
-                        cell.alignment = Alignment(horizontal='center')
+                # Set the alignment for the header row (centered)
+                header_row = new_sheet[1]
+                for cell in header_row:
+                    cell.alignment = Alignment(horizontal='center')
 
                 sheet = new_sheet
             else:
+                # Use the existing sheet with the provided sheet_name
                 sheet = workbook[sheet_name]
 
             # Check if column names already exist in the sheet
@@ -261,18 +236,23 @@ def create_daily_summary_sheet(request, sheet_name):
             # Iterate over each date within the financial year
             current_date = financial_year_start
             while current_date <= financial_year_end:
+                # Create a new row for each date
                 row = [current_date.strftime('%d/%m/%Y')]
                 sheet.append(row)
 
-                # Create an Alignment object to center align text
+                # Create an Alignment object to center align text for the date cell
                 alignment = Alignment(horizontal='center')
-
-                # Apply the alignment to all cells in the last row of the sheet
-                for cell in sheet[sheet.max_row]:
-                    cell.alignment = alignment
+                sheet.cell(row=sheet.max_row, column=1).alignment = alignment
 
                 # Move to the next date
                 current_date += timedelta(days=1)
+
+                # Add an empty row (a row of empty strings)
+                empty_row = [''] * len(default_columns)
+                sheet.append(empty_row)
+
+                # Merge the cell for the date cell and the blank row below it
+                sheet.merge_cells(start_row=sheet.max_row - 1, start_column=1, end_row=sheet.max_row, end_column=1)
 
             # Save the updated Excel file
             workbook.save(file_path)
@@ -280,6 +260,7 @@ def create_daily_summary_sheet(request, sheet_name):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+        
 
         # ### if sheetname Summary_data_01
         # sheet_name_trimed = sheet_name[:13]
