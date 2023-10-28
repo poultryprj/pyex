@@ -5,7 +5,6 @@ urlpatterns = [
     path('create_excel/<str:sheet_name>/', views.excel_view, name='create_excel'),
     path('create_daily_summary_sheet/<str:sheet_name>/',views.create_daily_summary_sheet, name='create_daily_summary_sheet'),
 
-    path('insert_formulas_to_weight_column/<str:sheet_name>/<str:file_path>/', views.insert_formulas_to_weight_column, name='insert_formulas_to_weight_column')
 
     # path('read_excel/<str:sheet_name>/', views.read_excel, name='read_excel'),
     # path('update_excel/<str:sheet_name>/', views.update_excel, name='update_excel'),

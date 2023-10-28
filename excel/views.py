@@ -170,13 +170,15 @@ def excel_view(request, sheet_name):
         
 
     
+import os
 from datetime import datetime, timedelta
 from openpyxl import load_workbook
 from openpyxl.styles import Alignment
+from openpyxl.utils import get_column_letter
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
-from rest_framework import status
 import json
+from rest_framework import status
 
 @api_view(['POST'])
 def create_daily_summary_sheet(request, sheet_name):
@@ -186,6 +188,19 @@ def create_daily_summary_sheet(request, sheet_name):
 
             # Provide the full path to your Excel file
             file_path = 'main.xlsx'
+
+            # Check if the file exists
+            if not os.path.isfile(file_path):
+                return JsonResponse({'error': f'File not found at path: {file_path}'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Load the Excel workbook using openpyxl
+            workbook = load_workbook(filename=file_path)
+
+            if sheet_name in workbook.sheetnames:
+                return JsonResponse({'error': f'Sheet "{sheet_name}" already exists'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Create a new sheet with the provided sheet_name
+            new_sheet = workbook.create_sheet(title=sheet_name)
 
             # Define the default columns
             default_columns = [
@@ -206,34 +221,19 @@ def create_daily_summary_sheet(request, sheet_name):
                 'closing_balance'
             ]
 
-            # Load the Excel workbook using openpyxl
-            workbook = load_workbook(filename=file_path)
+            # Add default columns to the new sheet
+            new_sheet.append(default_columns)
 
-            if sheet_name not in workbook.sheetnames:
-                # Create a new sheet with the provided sheet_name
-                new_sheet = workbook.create_sheet(title=sheet_name)
+            # Set column widths for default columns
+            for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRST', default_columns):
+                column = new_sheet.column_dimensions[column_letter]
+                # Adjust the width as needed
+                column.width = max(len(column_name) + 2, 12)  # Minimum width of 12
 
-                # Add default columns to the new sheet
-                new_sheet.append(default_columns)
-
-                # Set column widths for default columns
-                for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRST', default_columns):
-                    column = new_sheet.column_dimensions[column_letter]
-                    # Adjust the width as needed
-                    column.width = max(len(column_name) + 2, 12)  # Minimum width of 12
-
-                # Set the alignment for the header row (centered)
-                header_row = new_sheet[1]
-                for cell in header_row:
-                    cell.alignment = Alignment(horizontal='center')
-
-                sheet = new_sheet
-            else:
-                # Use the existing sheet with the provided sheet_name
-                sheet = workbook[sheet_name]
-
-            # Check if column names already exist in the sheet
-            column_names = [cell.value for cell in sheet[1]]
+            # Set the alignment for the header row (centered)
+            header_row = new_sheet[1]
+            for cell in header_row:
+                cell.alignment = Alignment(horizontal='center')
 
             # Define the financial year start and end dates
             financial_year_start = datetime(2023, 4, 1)
@@ -243,77 +243,19 @@ def create_daily_summary_sheet(request, sheet_name):
             current_date = financial_year_start
             while current_date <= financial_year_end:
                 # Create a new row for each date
-                row = [current_date.strftime('%d/%m/%Y'), 1, '', '', '', '', '', 2, '', '', '', '']
-                sheet.append(row)
+                row = [current_date.strftime('%d-%m-%Y'), 1, '', '', '', '', '', 2, '', '', '', '']
+                new_sheet.append(row)
 
                 # Move to the next date
                 current_date += timedelta(days=1)
 
             # Save the updated Excel file
             workbook.save(file_path)
-            return JsonResponse({'message': 'Data appended successfully'}, status=status.HTTP_200_OK)
+
+            return JsonResponse({'message': 'Data created successfully'}, status=status.HTTP_200_OK)
+        except FileNotFoundError as e:
+            return JsonResponse({'error': 'File not found'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-from datetime import datetime, timedelta
-from openpyxl import load_workbook
-from openpyxl.styles import Alignment
-from openpyxl.utils import get_column_letter
-from django.http import JsonResponse
-from rest_framework.decorators import api_view
-import json
-from rest_framework import status
-
-@api_view(['POST'])
-def insert_formulas_to_weight_column(request, sheet_name, file_path):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body.decode("utf-8"))
-
-            # Load the Excel workbook using openpyxl
-            workbook = load_workbook(filename=file_path)
-
-            if sheet_name not in workbook.sheetnames:
-                return JsonResponse({'error': 'Sheet does not exist'}, status=status.HTTP_400_BAD_REQUEST)
-
-            sheet = workbook[sheet_name]
-
-            # Check if the "weight" column exists, and if not, create it
-            weight_column = None
-            for col, column_name in enumerate(sheet.iter_rows(min_row=1, max_row=1, values_only=True)):
-                col += 1  # Adjust for 1-based indexing
-                for column in column_name:
-                    if column == 'weight':
-                        print(column)
-                        weight_column = get_column_letter(col)
-
-            if weight_column is None:
-                return JsonResponse({'error': 'Weight column name does not exist'}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Define the financial year start and end dates
-            financial_year_start = datetime(2023, 4, 1)
-            financial_year_end = datetime(2024, 3, 31)
-
-            # Iterate over each date within the financial year
-            current_date = financial_year_start
-            row_number = 2  # Start from the second row (1-based index)
-
-            while current_date <= financial_year_end:
-                # Append the formula to the "weight" column for each row
-                date_cell = f"A{row_number}"
-                formula = (
-                    f'=IF(COUNTIFS(A:A,{date_cell},D:D,1)>0,'
-                    f'AVERAGEIFS(E:E,A:A,{date_cell},D:D,1),"")'
-                )
-                sheet[f"{weight_column}{row_number}"] = formula
-
-                # Move to the next date and row
-                current_date += timedelta(days=1)
-                row_number += 1
-
-            # Save the updated Excel file
-            workbook.save(file_path)
-            return JsonResponse({'message': 'Formulas inserted successfully'})
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=status.HTTP_400_BAD_REQUEST)
