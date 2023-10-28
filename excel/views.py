@@ -299,6 +299,18 @@ def create_daily_summary_sheet(request, sheet_name):
             for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=15, max_col=15):
                 for cell in row:
                     cell.number_format = '0.00'
+            
+            # For opening balance column
+            # Format the "B" column to display two decimal places
+            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=2, max_col=2):
+                for cell in row:
+                    cell.number_format = '0.00'
+            
+            # For paid amount column
+            # Format the "C" column to display two decimal places
+            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=3, max_col=3):
+                for cell in row:
+                    cell.number_format = '0.00'
 
             # For cloasing balance column
             # Format the "D" column to display two decimal places
