@@ -13,10 +13,11 @@ from datetime import datetime  # Import datetime module
 import pytz  # Import pytz module
 from openpyxl.styles import Alignment
 from datetime import datetime, timedelta
+import openpyxl
+from openpyxl.worksheet.views import SheetView, Selection
 
-
-
-# Import the necessary module
+import os
+from openpyxl.styles import Alignment
 
 
 @api_view(['POST'])
@@ -152,6 +153,7 @@ def excel_view(request, sheet_name):
 
                     # Append data to the sheet
                     sheet.append(row)
+                    sheet.freeze_panes = "A2"
 
                     # Create an Alignment object to center align text
                     alignment = Alignment(horizontal='center')
@@ -159,7 +161,6 @@ def excel_view(request, sheet_name):
                     # Apply the alignment to all cells in the last row of the sheet
                     for cell in sheet[sheet.max_row]:
                         cell.alignment = alignment
-
                 # Save the updated Excel file
                 workbook.save(file_path)
                 return Response({'message': 'Data appended successfully'}, status=status.HTTP_200_OK)
@@ -168,14 +169,7 @@ def excel_view(request, sheet_name):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
        
-import os
-from datetime import datetime, timedelta
-from openpyxl import load_workbook
-from openpyxl.styles import Alignment
-from django.http import JsonResponse
-from rest_framework.decorators import api_view
-import json
-from rest_framework import status
+#################################
 
 @api_view(['POST'])
 def create_daily_summary_sheet(request, sheet_name):
@@ -202,6 +196,10 @@ def create_daily_summary_sheet(request, sheet_name):
             # Define the default columns
             default_columns = [
                 'Date',
+                'opening_balance',
+                'paid_amount',
+                'closing_balance',
+                '',
                 'product_1',
                 'weight',
                 'quantity',
@@ -212,10 +210,6 @@ def create_daily_summary_sheet(request, sheet_name):
                 'quantity',
                 'rate',
                 'amount',
-                '',
-                'opening_balance',
-                'paid_amount',
-                'closing_balance'
             ]
 
             # Add default columns to the new sheet
@@ -240,7 +234,7 @@ def create_daily_summary_sheet(request, sheet_name):
             current_date = financial_year_start
             while current_date <= financial_year_end:
                 # Create a new row for each date
-                row = [current_date.strftime('%d-%m-%Y'), 1, '', '', '', '', '', 2, '', '', '', '']
+                row = [current_date.strftime('%d-%m-%Y'), 20054, 6001, 30000, '', 1, '', '', '', '', '', 2,'','','']
                 new_sheet.append(row)
 
                 # Move to the next date
@@ -249,34 +243,69 @@ def create_daily_summary_sheet(request, sheet_name):
             # Save the updated Excel file
             workbook.save(file_path)
 
-            # Add the formulas to the "C" column (weight column) from $A2 to $A367
+            # Add the formulas to the "G" column (weight column) from $A2 to $A367
             for row in range(2, 368):
+                
+                # For product_id 1
                 avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1)>0,AVERAGEIFS(Raw_data_01!E:E,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1),"")'
-                new_sheet[f'C{row}'] = avg_weight
+                new_sheet[f'G{row}'] = avg_weight
 
                 sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1)>0,SUMIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1),"")'
-                new_sheet[f'D{row}'] = sum_of_quantity
+                new_sheet[f'H{row}'] = sum_of_quantity
 
                 avg_rate = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1)>0,AVERAGEIFS(Raw_data_01!H:H,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1),"")'
-                new_sheet[f'E{row}'] = avg_rate
+                new_sheet[f'I{row}'] = avg_rate
 
                 sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1)>0,SUMIFS(Raw_data_01!I:I,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1),"")'
-                new_sheet[f'F{row}'] = sum_of_amount               
+                new_sheet[f'J{row}'] = sum_of_amount      
 
-            # Format the "C" column to display two decimal places
-            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=3, max_col=3):
+                # For product_id 2
+
+                sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2)>0,SUMIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2),"")'
+                new_sheet[f'M{row}'] = sum_of_quantity
+
+                avg_rate = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2)>0,AVERAGEIFS(Raw_data_01!H:H,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2),"")'
+                new_sheet[f'N{row}'] = avg_rate
+
+                sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2)>0,SUMIFS(Raw_data_01!I:I,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2),"")'
+                new_sheet[f'O{row}'] = sum_of_amount
+
+                closing_balance = f'=SUM(J{row},O{row},B{row}) - C{row}'
+                new_sheet[f'D{row}'] = closing_balance  
+                         
+            # For product 1
+            # Format the "G" column to display two decimal places
+            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=7, max_col=7):
                 for cell in row:
                     cell.number_format = '0.00'
 
-            # Format the "E" column to display two decimal places
-            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=5, max_col=5):
+            # Format the "I" column to display two decimal places
+            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=9, max_col=9):
                 for cell in row:
                     cell.number_format = '0.00'
 
-            # Format the "F" column to display two decimal places
-            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=6, max_col=6):
+            # Format the "J" column to display two decimal places
+            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=10, max_col=10):
                 for cell in row:
                     cell.number_format = '0.00'
+            
+            # For product 2
+            # Format the "N" column to display two decimal places
+            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=14, max_col=14):
+                for cell in row:
+                    cell.number_format = '0.00'
+
+            # Format the "O" column to display two decimal places
+            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=15, max_col=15):
+                for cell in row:
+                    cell.number_format = '0.00'
+
+            # For cloasing balance column
+            # Format the "D" column to display two decimal places
+            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=4, max_col=4):
+                for cell in row:
+                    cell.number_format = '0.00'
+
 
             # Freeze the top row (column names) when scrolling
             new_sheet.freeze_panes = "A2"
@@ -284,7 +313,7 @@ def create_daily_summary_sheet(request, sheet_name):
             # Save the updated Excel file again
             workbook.save(file_path)
 
-            return JsonResponse({'message': 'Data and formulas inserted successfully'}, status=status.HTTP_200_OK)
+            return JsonResponse({'message': f'Successfully Created {sheet_name} with Data & Formulas'}, status=status.HTTP_200_OK)
         except FileNotFoundError as e:
             return JsonResponse({'error': 'File not found'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
