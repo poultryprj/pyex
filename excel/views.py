@@ -168,7 +168,6 @@ def excel_view(request, sheet_name):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
        
-       
 import os
 from datetime import datetime, timedelta
 from openpyxl import load_workbook
@@ -252,13 +251,35 @@ def create_daily_summary_sheet(request, sheet_name):
 
             # Add the formulas to the "C" column (weight column) from $A2 to $A367
             for row in range(2, 368):
-                formula = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1)>0,AVERAGEIFS(Raw_data_01!E:E,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1),"")'
-                new_sheet[f'C{row}'] = formula
+                avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1)>0,AVERAGEIFS(Raw_data_01!E:E,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1),"")'
+                new_sheet[f'C{row}'] = avg_weight
+
+                sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1)>0,SUMIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1),"")'
+                new_sheet[f'D{row}'] = sum_of_quantity
+
+                avg_rate = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1)>0,AVERAGEIFS(Raw_data_01!H:H,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1),"")'
+                new_sheet[f'E{row}'] = avg_rate
+
+                sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1)>0,SUMIFS(Raw_data_01!I:I,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1),"")'
+                new_sheet[f'F{row}'] = sum_of_amount               
 
             # Format the "C" column to display two decimal places
             for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=3, max_col=3):
                 for cell in row:
                     cell.number_format = '0.00'
+
+            # Format the "E" column to display two decimal places
+            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=5, max_col=5):
+                for cell in row:
+                    cell.number_format = '0.00'
+
+            # Format the "F" column to display two decimal places
+            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=6, max_col=6):
+                for cell in row:
+                    cell.number_format = '0.00'
+
+            # Freeze the top row (column names) when scrolling
+            new_sheet.freeze_panes = "A2"
 
             # Save the updated Excel file again
             workbook.save(file_path)
@@ -270,3 +291,4 @@ def create_daily_summary_sheet(request, sheet_name):
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=status.HTTP_400_BAD_REQUEST)
+
