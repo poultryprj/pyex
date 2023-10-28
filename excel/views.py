@@ -97,7 +97,7 @@ def excel_view(request, sheet_name):
 
             # Format current_date as "dd/mm/yyyy" and current_time as "HH:mm:ss"
             current_date = current_datetime.strftime(
-                '%d/%m/%Y')  # Format date as dd/mm/yyyy
+                '%d-%m-%Y')  # Format date as dd/mm/yyyy
             current_time = current_datetime.strftime(
                 '%H:%M:%S')  # Format time as HH:mm:ss
 
