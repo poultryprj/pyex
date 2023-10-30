@@ -15,9 +15,7 @@ from openpyxl.styles import Alignment
 from datetime import datetime, timedelta
 import openpyxl
 from openpyxl.worksheet.views import SheetView, Selection
-
 import os
-from openpyxl.styles import Alignment
 
 
 @api_view(['POST'])
@@ -35,7 +33,7 @@ def excel_view(request, sheet_name):
 
             # Define the default columns outside of the if-else block
             default_columns = ['   date   ', '   time   ', 'shop_code',
-                            'product_id', 'weight', 'quantity', 'daily_rate', 'rate', 'amount']
+                               'product_id', 'weight', 'quantity', 'daily_rate', 'rate', 'amount']
 
             # Load the Excel workbook using openpyxl
             workbook = load_workbook(filename=file_path)
@@ -46,7 +44,6 @@ def excel_view(request, sheet_name):
                     # Create the first sheet
                     new_sheet_name = "Raw_data_01"
                     new_sheet = workbook.create_sheet(title=new_sheet_name)
-                    # Add default columns to the new sheet
                     new_sheet.append(default_columns)
 
                     # Set column widths for default columns
@@ -68,7 +65,6 @@ def excel_view(request, sheet_name):
                             break
                         sheet_number += 1
                     new_sheet = workbook.create_sheet(title=new_sheet_name)
-                    # Add default columns to the new sheet
                     new_sheet.append(default_columns)
 
                     # Set column widths for default columns
@@ -120,36 +116,14 @@ def excel_view(request, sheet_name):
                         weight = obj.get('weight')
                         if not weight:
                             return Response({"error": "please enter weight..!!"}, status=status.HTTP_400_BAD_REQUEST)
-                    if product_id == 1:
-                        amount= obj.get('weight', 0.0) * obj.get('daily_rate', 0.0)
-                    else:
-                        amount= obj.get('quantity', 0.0) * obj.get('daily_rate', 0.0)
-
-
-                    try:
-                        excel_data = ExcelData(
-                            date=current_datetime.now(),
-                            time=current_datetime.ctime(),
-                            shop_code=obj.get('shop_code', 0),
-                            product_id=product_id,
-                            weight=weight,  # Use the value set above
-                            quantity=obj.get('quantity', 0.0),
-                            daily_rate=obj.get('daily_rate', 0.0),
-                            rate=obj.get('rate', 0.0),                            
-                            amount = amount
-                        )
-                        excel_data.save()
-                    except Exception as e:
-                        print(e)
 
                     # Handle the weight when appending to the sheet
                     if weight == "":
-                        print(excel_data.amount,"amount")
                         row = [current_date, current_time, obj.get('shop_code', 0), product_id, "", obj.get(
-                            'quantity', 0.0), obj.get('daily_rate', 0.0), obj.get('rate', 0.0), excel_data.amount]
+                            'quantity', 0.0), obj.get('daily_rate', 0.0), obj.get('rate', 0.0), ""]
                     else:
                         row = [current_date, current_time, obj.get('shop_code', 0), product_id, weight, obj.get(
-                            'quantity', 0.0), obj.get('daily_rate', 0.0), obj.get('rate', 0.0), excel_data.amount]
+                            'quantity', 0.0), obj.get('daily_rate', 0.0), obj.get('rate', 0.0), ""]
 
                     # Append data to the sheet
                     sheet.append(row)
@@ -161,14 +135,26 @@ def excel_view(request, sheet_name):
                     # Apply the alignment to all cells in the last row of the sheet
                     for cell in sheet[sheet.max_row]:
                         cell.alignment = alignment
-                # Save the updated Excel file
+
+                # Save the updated Excel file after appending data
                 workbook.save(file_path)
+
+                # Apply the formula after saving the sheet
+                for i in range(2, sheet.max_row + 1):
+                    formula = f'=IF(D{i}=1, E{i}*G{i}, IF(D{i}=2, F{i}*G{i}, ""))'
+                    sheet.cell(row=i, column=default_columns.index(
+                        "amount") + 1).value = formula
+
+                # Save the Excel file again after applying the formula
+                workbook.save(file_path)
+
                 return Response({'message': 'Data appended successfully'}, status=status.HTTP_200_OK)
             else:
                 return Response({"error": "Column names in the data do not match the existing sheet"}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-       
+
+
 #################################
 
 @api_view(['POST'])
@@ -219,7 +205,8 @@ def create_daily_summary_sheet(request, sheet_name):
             for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRST', default_columns):
                 column = new_sheet.column_dimensions[column_letter]
                 # Adjust the width as needed
-                column.width = max(len(column_name) + 2, 12)  # Minimum width of 12
+                # Minimum width of 12
+                column.width = max(len(column_name) + 2, 12)
 
             # Set the alignment for the header row (centered)
             header_row = new_sheet[1]
@@ -234,7 +221,8 @@ def create_daily_summary_sheet(request, sheet_name):
             current_date = financial_year_start
             while current_date <= financial_year_end:
                 # Create a new row for each date
-                row = [current_date.strftime('%d-%m-%Y'), 20054, 6001, 30000, '', 1, '', '', '', '', '', 2,'','','']
+                row = [current_date.strftime(
+                    '%d-%m-%Y'), 20054, 6001, 30000, '', 1, '', '', '', '', '', 2, '', '', '']
                 new_sheet.append(row)
 
                 # Move to the next date
@@ -245,7 +233,7 @@ def create_daily_summary_sheet(request, sheet_name):
 
             # Add the formulas to the "G" column (weight column) from $A2 to $A367
             for row in range(2, 368):
-                
+
                 # For product_id 1
                 avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1)>0,AVERAGEIFS(Raw_data_01!E:E,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1),"")'
                 new_sheet[f'G{row}'] = avg_weight
@@ -257,7 +245,7 @@ def create_daily_summary_sheet(request, sheet_name):
                 new_sheet[f'I{row}'] = avg_rate
 
                 sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1)>0,SUMIFS(Raw_data_01!I:I,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1),"")'
-                new_sheet[f'J{row}'] = sum_of_amount      
+                new_sheet[f'J{row}'] = sum_of_amount
 
                 # For product_id 2
 
@@ -271,8 +259,8 @@ def create_daily_summary_sheet(request, sheet_name):
                 new_sheet[f'O{row}'] = sum_of_amount
 
                 closing_balance = f'=SUM(J{row},O{row},B{row}) - C{row}'
-                new_sheet[f'D{row}'] = closing_balance  
-                         
+                new_sheet[f'D{row}'] = closing_balance
+
             # For product 1
             # Format the "G" column to display two decimal places
             for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=7, max_col=7):
@@ -288,7 +276,7 @@ def create_daily_summary_sheet(request, sheet_name):
             for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=10, max_col=10):
                 for cell in row:
                     cell.number_format = '0.00'
-            
+
             # For product 2
             # Format the "N" column to display two decimal places
             for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=14, max_col=14):
@@ -299,13 +287,13 @@ def create_daily_summary_sheet(request, sheet_name):
             for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=15, max_col=15):
                 for cell in row:
                     cell.number_format = '0.00'
-            
+
             # For opening balance column
             # Format the "B" column to display two decimal places
             for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=2, max_col=2):
                 for cell in row:
                     cell.number_format = '0.00'
-            
+
             # For paid amount column
             # Format the "C" column to display two decimal places
             for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=3, max_col=3):
@@ -317,7 +305,6 @@ def create_daily_summary_sheet(request, sheet_name):
             for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=4, max_col=4):
                 for cell in row:
                     cell.number_format = '0.00'
-
 
             # Freeze the top row (column names) when scrolling
             new_sheet.freeze_panes = "A2"
@@ -332,4 +319,3 @@ def create_daily_summary_sheet(request, sheet_name):
             return JsonResponse({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=status.HTTP_400_BAD_REQUEST)
-
