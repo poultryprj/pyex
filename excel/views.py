@@ -157,12 +157,6 @@ def excel_view(request, sheet_name):
 
 #################################
 
-from openpyxl import load_workbook
-from openpyxl.styles import Alignment
-from datetime import datetime, timedelta
-import os
-import json
-
 @api_view(['POST'])
 def create_daily_summary_sheet(request, sheet_name):
     if request.method == 'POST':
