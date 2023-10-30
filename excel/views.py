@@ -157,6 +157,12 @@ def excel_view(request, sheet_name):
 
 #################################
 
+from openpyxl import load_workbook
+from openpyxl.styles import Alignment
+from datetime import datetime, timedelta
+import os
+import json
+
 @api_view(['POST'])
 def create_daily_summary_sheet(request, sheet_name):
     if request.method == 'POST':
@@ -221,19 +227,14 @@ def create_daily_summary_sheet(request, sheet_name):
             current_date = financial_year_start
             while current_date <= financial_year_end:
                 # Create a new row for each date
-                row = [current_date.strftime(
-                    '%d-%m-%Y'), 20054, 6001, 30000, '', 1, '', '', '', '', '', 2, '', '', '']
+                row = [current_date.strftime('%d-%m-%Y'), '', '', '', '', 1, '', '', '', '', '', 2, '', '', '']
                 new_sheet.append(row)
 
                 # Move to the next date
                 current_date += timedelta(days=1)
 
-            # Save the updated Excel file
-            workbook.save(file_path)
-
             # Add the formulas to the "G" column (weight column) from $A2 to $A367
             for row in range(2, 368):
-
                 # For product_id 1
                 avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1)>0,AVERAGEIFS(Raw_data_01!E:E,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1),"")'
                 new_sheet[f'G{row}'] = avg_weight
@@ -248,7 +249,6 @@ def create_daily_summary_sheet(request, sheet_name):
                 new_sheet[f'J{row}'] = sum_of_amount
 
                 # For product_id 2
-
                 sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2)>0,SUMIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2),"")'
                 new_sheet[f'M{row}'] = sum_of_quantity
 
@@ -260,6 +260,11 @@ def create_daily_summary_sheet(request, sheet_name):
 
                 closing_balance = f'=SUM(J{row},O{row},B{row}) - C{row}'
                 new_sheet[f'D{row}'] = closing_balance
+
+            # Add the formula to the "B" column (opening_balance column) from B3 to B367
+            for row in range(3, 368):
+                formula = f'=IF(D{row - 1}<>0, D{row - 1}, IFERROR(INDEX(D2:D${row - 1}, MATCH(1, D2:D${row - 1}<>0, 0)), LOOKUP(2, 1/(D2:D${row - 1}<>0), D2:D${row - 1})))'
+                new_sheet[f'B{row}'] = formula
 
             # For product 1
             # Format the "G" column to display two decimal places
@@ -300,7 +305,7 @@ def create_daily_summary_sheet(request, sheet_name):
                 for cell in row:
                     cell.number_format = '0.00'
 
-            # For cloasing balance column
+            # For closing balance column
             # Format the "D" column to display two decimal places
             for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=4, max_col=4):
                 for cell in row:

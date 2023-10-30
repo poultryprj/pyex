@@ -1,5 +1,6 @@
 =IF(COUNTIFS(Raw_data_01!A:A,$A2,Raw_data_01!D:D,1)>0,AVERAGEIFS(Raw_data_01!E:E,Raw_data_01!A:A,$A2,Raw_data_01!D:D,1),"")
-
+=IF(D5<>0, D5, IFERROR(INDEX(D2:D$4, MATCH(1, D2:D$4<>0, 0)), LOOKUP(2, 1/(D2:D$4<>0), D2:D$4)))
+=IF(D13<>0, D13, IFERROR(INDEX(D2:D$13, MATCH(1,@ D2:D$13<>0, 0)), LOOKUP(2, 1/(D2:D$13<>0), D2:D$13)))
 
 
 from django.shortcuts import render
