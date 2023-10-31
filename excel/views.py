@@ -17,7 +17,6 @@ import openpyxl
 from openpyxl.worksheet.views import SheetView, Selection
 import os
 
-
 @api_view(['POST'])
 def excel_view(request, sheet_name):
     if request.method == 'POST':
@@ -44,7 +43,8 @@ def excel_view(request, sheet_name):
                     # Create the first sheet
                     new_sheet_name = "Raw_data_01"
                     new_sheet = workbook.create_sheet(title=new_sheet_name)
-                    new_sheet.append(default_columns)
+                    new_sheet.append(['Raw Data Summary'])  # Add the title row
+                    new_sheet.append(default_columns)  # Add the column names
 
                     # Set column widths for default columns
                     for column_letter, column_name in zip('ABCDEFGHIJKLM', default_columns):
@@ -53,7 +53,7 @@ def excel_view(request, sheet_name):
                         column.width = len(column_name) + 2
 
                     # Set the alignment for the header row (centered)
-                    header_row = new_sheet[1]
+                    header_row = new_sheet[2]
                     for cell in header_row:
                         cell.alignment = Alignment(horizontal='center')
                 else:
@@ -65,7 +65,12 @@ def excel_view(request, sheet_name):
                             break
                         sheet_number += 1
                     new_sheet = workbook.create_sheet(title=new_sheet_name)
-                    new_sheet.append(default_columns)
+                    # Merge cells for the title
+                    new_sheet.merge_cells('A1:I1')
+                    title_cell = new_sheet.cell(row=1, column=1)
+                    title_cell.value = 'RAW DATA'
+                    title_cell.alignment = Alignment(horizontal='center')
+                    new_sheet.append(default_columns)  # Add the column names
 
                     # Set column widths for default columns
                     for column_letter, column_name in zip('ABCDEFGHIJKLM', default_columns):
@@ -74,7 +79,7 @@ def excel_view(request, sheet_name):
                         column.width = len(column_name) + 2
 
                     # Set the alignment for the header row (centered)
-                    header_row = new_sheet[1]
+                    header_row = new_sheet[2]
                     for cell in header_row:
                         cell.alignment = Alignment(horizontal='center')
 
@@ -83,7 +88,7 @@ def excel_view(request, sheet_name):
                 sheet = workbook[sheet_name]
 
             # Check if column names already exist in the sheet
-            column_names = [cell.value for cell in sheet[1]]
+            column_names = [cell.value for cell in sheet[2]]
 
             # Get the current date and time in UTC+05:30 (IST)
             # Define the IST timezone
@@ -127,7 +132,7 @@ def excel_view(request, sheet_name):
 
                     # Append data to the sheet
                     sheet.append(row)
-                    sheet.freeze_panes = "A2"
+                    sheet.freeze_panes = "A3"
 
                     # Create an Alignment object to center align text
                     alignment = Alignment(horizontal='center')
@@ -140,7 +145,7 @@ def excel_view(request, sheet_name):
                 workbook.save(file_path)
 
                 # Apply the formula after saving the sheet
-                for i in range(2, sheet.max_row + 1):
+                for i in range(3, sheet.max_row + 1):
                     formula = f'=IF(D{i}=1, E{i}*G{i}, IF(D{i}=2, F{i}*G{i}, ""))'
                     sheet.cell(row=i, column=default_columns.index(
                         "amount") + 1).value = formula
@@ -155,8 +160,8 @@ def excel_view(request, sheet_name):
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-#################################
 
+#################################@api_view(['POST'])
 @api_view(['POST'])
 def create_daily_summary_sheet(request, sheet_name):
     if request.method == 'POST':
@@ -179,7 +184,7 @@ def create_daily_summary_sheet(request, sheet_name):
             # Create a new sheet with the provided sheet_name
             new_sheet = workbook.create_sheet(title=sheet_name)
 
-            # Define the default columns
+            # Define the default columns and add them to the A2 row
             default_columns = [
                 'Date',
                 'opening_balance',
@@ -198,8 +203,29 @@ def create_daily_summary_sheet(request, sheet_name):
                 'amount',
             ]
 
-            # Add default columns to the new sheet
-            new_sheet.append(default_columns)
+            # Merge cells for the title
+            new_sheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=4)
+            title_cell = new_sheet.cell(row=1, column=1)
+            title_cell.value = 'DAILY ACCOUNT SUMMARY'
+            title_cell.alignment = Alignment(horizontal='center')
+
+            new_sheet.merge_cells(start_row=1, start_column=6, end_row=1, end_column=10)
+            title_cell = new_sheet.cell(row=1, column=6)
+            title_cell.value = 'BIRDS'
+            title_cell.alignment = Alignment(horizontal='center')
+
+            new_sheet.merge_cells(start_row=1, start_column=12, end_row=1, end_column=15)
+            title_cell = new_sheet.cell(row=1, column=12)
+            title_cell.value = 'EGGS'
+            title_cell.alignment = Alignment(horizontal='center')
+
+            for col_num, header in enumerate(default_columns, start=1):
+                new_sheet.cell(row=2, column=col_num, value=header)
+
+            # Set the alignment for the header row (centered)
+            header_row = new_sheet[2]
+            for cell in header_row:
+                cell.alignment = Alignment(horizontal='center')
 
             # Set column widths for default columns
             for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRST', default_columns):
@@ -207,11 +233,6 @@ def create_daily_summary_sheet(request, sheet_name):
                 # Adjust the width as needed
                 # Minimum width of 12
                 column.width = max(len(column_name) + 2, 12)
-
-            # Set the alignment for the header row (centered)
-            header_row = new_sheet[1]
-            for cell in header_row:
-                cell.alignment = Alignment(horizontal='center')
 
             # Define the financial year start and end dates
             financial_year_start = datetime(2023, 4, 1)
@@ -227,8 +248,8 @@ def create_daily_summary_sheet(request, sheet_name):
                 # Move to the next date
                 current_date += timedelta(days=1)
 
-            # Add the formulas to the "G" column (weight column) from $A2 to $A367
-            for row in range(2, 368):
+            # Add the formulas to the "G" column (weight column) from $A3 to $A368
+            for row in range(3, 369):
                 # For product_id 1
                 avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1)>0,AVERAGEIFS(Raw_data_01!E:E,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1),"")'
                 new_sheet[f'G{row}'] = avg_weight
@@ -255,58 +276,21 @@ def create_daily_summary_sheet(request, sheet_name):
                 closing_balance = f'=SUM(J{row},O{row},B{row}) - C{row}'
                 new_sheet[f'D{row}'] = closing_balance
 
-            # Add the formula to the "B" column (opening_balance column) from B3 to B367
-            for row in range(3, 368):
-                formula = f'=IF(D{row - 1}<>0, D{row - 1}, IFERROR(INDEX(D2:D${row - 1}, MATCH(1, D2:D${row - 1}<>0, 0)), LOOKUP(2, 1/(D2:D${row - 1}<>0), D2:D${row - 1})))'
+            # Add the formula to the "B" column (opening_balance column) from B4 to B368
+            for row in range(4, 369):
+                formula = f'=IF(D{row - 1}<>0, D{row - 1}, IFERROR(INDEX(D3:D${row - 1}, MATCH(1, D3:D${row - 1}<>0, 0)), LOOKUP(2, 1/(D3:D${row - 1}<>0), D3:D${row - 1})))'
                 new_sheet[f'B{row}'] = formula
 
-            # For product 1
-            # Format the "G" column to display two decimal places
-            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=7, max_col=7):
-                for cell in row:
-                    cell.number_format = '0.00'
-
-            # Format the "I" column to display two decimal places
-            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=9, max_col=9):
-                for cell in row:
-                    cell.number_format = '0.00'
-
-            # Format the "J" column to display two decimal places
-            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=10, max_col=10):
-                for cell in row:
-                    cell.number_format = '0.00'
-
-            # For product 2
-            # Format the "N" column to display two decimal places
-            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=14, max_col=14):
-                for cell in row:
-                    cell.number_format = '0.00'
-
-            # Format the "O" column to display two decimal places
-            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=15, max_col=15):
-                for cell in row:
-                    cell.number_format = '0.00'
-
-            # For opening balance column
-            # Format the "B" column to display two decimal places
-            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=2, max_col=2):
-                for cell in row:
-                    cell.number_format = '0.00'
-
-            # For paid amount column
-            # Format the "C" column to display two decimal places
-            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=3, max_col=3):
-                for cell in row:
-                    cell.number_format = '0.00'
-
-            # For closing balance column
-            # Format the "D" column to display two decimal places
-            for row in new_sheet.iter_rows(min_row=2, max_row=368, min_col=4, max_col=4):
-                for cell in row:
-                    cell.number_format = '0.00'
+            # Format the columns
+            columns_to_format = ['G', 'H', 'I', 'J', 'M', 'N', 'O', 'B', 'C', 'D']
+            for col_letter in columns_to_format:
+                # Format the columns to display two decimal places
+                for row in new_sheet.iter_rows(min_row=3, max_row=369, min_col=ord(col_letter) - 64, max_col=ord(col_letter) - 64):
+                    for cell in row:
+                        cell.number_format = '0.00'
 
             # Freeze the top row (column names) when scrolling
-            new_sheet.freeze_panes = "A2"
+            new_sheet.freeze_panes = "A3"
 
             # Save the updated Excel file again
             workbook.save(file_path)
