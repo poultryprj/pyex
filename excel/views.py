@@ -199,7 +199,14 @@ def create_daily_summary_sheet(request, sheet_name):
                 'quantity',
                 'rate',
                 'amount',
-                '',           
+                '',
+                'product_type',
+                'product_id',
+                'weight',
+                'quantity',
+                'rate',
+                'amount',
+                '',              
                 # 'product_type',
                 # 'quantity',
                 # 'rate',
@@ -212,10 +219,16 @@ def create_daily_summary_sheet(request, sheet_name):
             title_cell.value = 'DAILY ACCOUNT SUMMARY'
             title_cell.alignment = Alignment(horizontal='center')
 
-            #BIRDS 1 (LARGE BOILER, SMALL BOILER, GAVRAN, KADAKNATH, BATER, DUCK)
+            # product_type 1 of 1 (LARGE BOILER, GAVRAN, KADAKNATH, BATER, DUCK)
             new_sheet.merge_cells(start_row=1, start_column=6, end_row=1, end_column=11)
             title_cell = new_sheet.cell(row=1, column=6)
             title_cell.value = 'LARGE BOILER'
+            title_cell.alignment = Alignment(horizontal='center')
+
+            #product_type 1 of 2  (SMALL BOILER)
+            new_sheet.merge_cells(start_row=1, start_column=13, end_row=1, end_column=18)
+            title_cell = new_sheet.cell(row=1, column=13)
+            title_cell.value = 'SMALL BOILER'
             title_cell.alignment = Alignment(horizontal='center')
 
 
@@ -255,7 +268,7 @@ def create_daily_summary_sheet(request, sheet_name):
             current_date = financial_year_start
             while current_date <= financial_year_end:
                 # Create a new row for each date
-                row = [current_date.strftime('%d-%m-%Y'), '', '', '', '', 1, 1, '', '', '', '', '', '', '', '', '']
+                row = [current_date.strftime('%d-%m-%Y'), '', '', '', '', 1, 1, '', '', '', '', '', 1, 2, '', '', '']
                 new_sheet.append(row)
 
                 # Move to the next date
@@ -263,18 +276,33 @@ def create_daily_summary_sheet(request, sheet_name):
 
             # Add the formulas to the "G" column (weight column) from $A3 to $A368
             for row in range(3, 369):
-                # For LARGE BOILER id=1
-                avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1)>0,AVERAGEIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1),"")'
+                # For product id=1
+                avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1)>0,AVERAGEIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1),"")'
                 new_sheet[f'H{row}'] = avg_weight
 
-                sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1)>0,SUMIFS(Raw_data_01!G:G,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1),"")'
+                sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1)>0,SUMIFS(Raw_data_01!G:G,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1),"")'
                 new_sheet[f'I{row}'] = sum_of_quantity
 
-                avg_rate = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1)>0,AVERAGEIFS(Raw_data_01!I:I,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1),"")'
+                avg_rate = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1)>0,AVERAGEIFS(Raw_data_01!I:I,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1),"")'
                 new_sheet[f'J{row}'] = avg_rate
 
-                sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1)>0,SUMIFS(Raw_data_01!J:J,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1),"")'
+                sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1)>0,SUMIFS(Raw_data_01!J:J,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1),"")'
                 new_sheet[f'K{row}'] = sum_of_amount
+
+                # For product id=2
+                avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2)>0,AVERAGEIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2),"")'
+                new_sheet[f'O{row}'] = avg_weight
+
+                sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2)>0,SUMIFS(Raw_data_01!G:G,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2),"")'
+                new_sheet[f'P{row}'] = sum_of_quantity
+
+                avg_rate = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2)>0,AVERAGEIFS(Raw_data_01!I:I,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2),"")'
+                new_sheet[f'Q{row}'] = avg_rate
+
+                sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2)>0,SUMIFS(Raw_data_01!J:J,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2),"")'
+                new_sheet[f'R{row}'] = sum_of_amount
+
+
 
                 # # For product_type 2
                 # sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2)>0,SUMIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2),"")'
@@ -295,7 +323,7 @@ def create_daily_summary_sheet(request, sheet_name):
                 new_sheet[f'B{row}'] = formula
 
             # Format the columns
-            columns_to_format = ['H', 'I', 'J', 'K', 'M', 'N', 'O', 'B', 'C', 'D']
+            columns_to_format = [ 'B', 'C', 'D', 'H', 'J', 'K', 'O', 'Q', 'R']
             for col_letter in columns_to_format:
                 # Format the columns to display two decimal places
                 for row in new_sheet.iter_rows(min_row=3, max_row=369, min_col=ord(col_letter) - 64, max_col=ord(col_letter) - 64):
