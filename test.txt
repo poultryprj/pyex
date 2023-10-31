@@ -28,7 +28,7 @@ def excel_view(request, sheet_name):
                 return Response({"error": "JSON objects are required."}, status=status.HTTP_400_BAD_REQUEST)
 
             # Define the default columns outside of the if-else block
-            default_columns = ['   date   ', '   time   ', 'shop_code', 'product_id', 'weight', 'quantity', 'daily_rate', 'rate', 'amount']
+            default_columns = ['   date   ', '   time   ', 'shop_code', 'product_type', 'weight', 'quantity', 'daily_rate', 'rate', 'amount']
 
             # Load the Excel workbook using openpyxl
             workbook = load_workbook(filename=file_path)
@@ -80,7 +80,7 @@ def excel_view(request, sheet_name):
                         date=obj.get('date', ''),
                         time=obj.get('time', ''),
                         shop_code=obj.get('shop_code', 0),
-                        product_id=obj.get('product_id', 0),
+                        product_type=obj.get('product_type', 0),
                         weight=obj.get('weight', 0.0),
                         quantity=obj.get('quantity', 0.0),
                         daily_rate=obj.get('daily_rate', 0.0),
@@ -89,7 +89,7 @@ def excel_view(request, sheet_name):
                     )
                     excel_data.save()
 
-                    row = [obj.get('date', ''), obj.get('time', ''), obj.get('shop_code', 0), obj.get('product_id', 0), obj.get('weight', 0.0), obj.get('quantity', 0.0), obj.get('daily_rate', 0.0), obj.get('rate', 0.0), obj.get('amount', 0.0)]
+                    row = [obj.get('date', ''), obj.get('time', ''), obj.get('shop_code', 0), obj.get('product_type', 0), obj.get('weight', 0.0), obj.get('quantity', 0.0), obj.get('daily_rate', 0.0), obj.get('rate', 0.0), obj.get('amount', 0.0)]
                     sheet.append(row)
 
                 # Save the updated Excel file
@@ -244,7 +244,7 @@ class ExcelData(models.Model):
     date = models.DateField()
     time = models.TimeField()
     shop_code = models.IntegerField()
-    product_id = models.IntegerField()
+    product_type = models.IntegerField()
     weight = models.DecimalField(max_digits=25, decimal_places=2)
     quantity = models.DecimalField(max_digits=25, decimal_places=2)
     daily_rate = models.DecimalField(max_digits=25, decimal_places=2)

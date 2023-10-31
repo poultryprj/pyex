@@ -31,8 +31,7 @@ def excel_view(request, sheet_name):
                 return Response({"error": "JSON objects are required."}, status=status.HTTP_400_BAD_REQUEST)
 
             # Define the default columns outside of the if-else block
-            default_columns = ['   date   ', '   time   ', 'shop_code',
-                               'product_id', 'weight', 'quantity', 'daily_rate', 'rate', 'amount']
+            default_columns = ['   date   ', '   time   ', 'shop_code', 'product_type', 'product_id',  'weight', 'quantity', 'daily_rate', 'rate', 'amount']
 
             # Load the Excel workbook using openpyxl
             workbook = load_workbook(filename=file_path)
@@ -65,8 +64,7 @@ def excel_view(request, sheet_name):
                             break
                         sheet_number += 1
                     new_sheet = workbook.create_sheet(title=new_sheet_name)
-                    # Merge cells for the title
-                    new_sheet.merge_cells('A1:I1')
+                    new_sheet.merge_cells('A1:J1')
                     title_cell = new_sheet.cell(row=1, column=1)
                     title_cell.value = 'RAW DATA'
                     title_cell.alignment = Alignment(horizontal='center')
@@ -103,31 +101,31 @@ def excel_view(request, sheet_name):
             current_time = current_datetime.strftime(
                 '%H:%M:%S')  # Format time as HH:mm:ss
 
-            # Append data only if the column names match and product_id is 1 or 2
+            # Append data only if the column names match and product_type is 1 or 2
             if column_names == default_columns:
                 # ...
                 # Inside the loop that processes JSON objects
                 for obj in json_objects:
-                    product_id = obj.get('product_id', 0)
-                    if product_id not in (1, 2):
-                        return Response({"error": "Please enter a valid product_id (1 or 2)"}, status=status.HTTP_400_BAD_REQUEST)
+                    product_type = obj.get('product_type', 0)
+                    if product_type not in (1, 2):
+                        return Response({"error": "Please enter a valid product_type (1 or 2)"}, status=status.HTTP_400_BAD_REQUEST)
 
-                    if product_id == 2:  # product_id == 2  for bird and weight not needed
+                    if product_type == 2:  # product_type == 2 for bird and weight not needed
                         weight = obj.get('weight')
                         if weight:
                             return Response({"error": "please remove weight field..!!"}, status=status.HTTP_400_BAD_REQUEST)
                     else:
-                        # product_id == 1  for eggs and weight needed
+                        # product_type == 1 for eggs and weight needed
                         weight = obj.get('weight')
                         if not weight:
                             return Response({"error": "please enter weight..!!"}, status=status.HTTP_400_BAD_REQUEST)
 
                     # Handle the weight when appending to the sheet
                     if weight == "":
-                        row = [current_date, current_time, obj.get('shop_code', 0), product_id, "", obj.get(
+                        row = [current_date, current_time, obj.get('shop_code', 0), product_type, obj.get('product_id', 0), "", obj.get(
                             'quantity', 0.0), obj.get('daily_rate', 0.0), obj.get('rate', 0.0), ""]
                     else:
-                        row = [current_date, current_time, obj.get('shop_code', 0), product_id, weight, obj.get(
+                        row = [current_date, current_time, obj.get('shop_code', 0), product_type, obj.get('product_id', 0), weight, obj.get(
                             'quantity', 0.0), obj.get('daily_rate', 0.0), obj.get('rate', 0.0), ""]
 
                     # Append data to the sheet
@@ -250,7 +248,7 @@ def create_daily_summary_sheet(request, sheet_name):
 
             # Add the formulas to the "G" column (weight column) from $A3 to $A368
             for row in range(3, 369):
-                # For product_id 1
+                # For product_type 1
                 avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1)>0,AVERAGEIFS(Raw_data_01!E:E,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1),"")'
                 new_sheet[f'G{row}'] = avg_weight
 
@@ -263,7 +261,7 @@ def create_daily_summary_sheet(request, sheet_name):
                 sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1)>0,SUMIFS(Raw_data_01!I:I,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,1),"")'
                 new_sheet[f'J{row}'] = sum_of_amount
 
-                # For product_id 2
+                # For product_type 2
                 sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2)>0,SUMIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2),"")'
                 new_sheet[f'M{row}'] = sum_of_quantity
 
