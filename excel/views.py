@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 import openpyxl
 from openpyxl.worksheet.views import SheetView, Selection
 import os
+from openpyxl.utils import get_column_letter
 
 @api_view(['POST'])
 def excel_view(request, sheet_name):
@@ -206,14 +207,28 @@ def create_daily_summary_sheet(request, sheet_name):
                 'quantity',
                 'rate',
                 'amount',
-                '',              
+                '',
+                'product_type',
+                'product_id',
+                'weight',
+                'quantity',
+                'rate',
+                'amount',
+                '',
+                'product_type',
+                'product_id',
+                'weight',
+                'quantity',
+                'rate',
+                'amount',
+                '',                   
                 # 'product_type',
                 # 'quantity',
                 # 'rate',
                 # 'amount',
             ]
 
-            # Merge cells for the title
+            # Merge cells for the title ACCOUNT
             new_sheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=4)
             title_cell = new_sheet.cell(row=1, column=1)
             title_cell.value = 'DAILY ACCOUNT SUMMARY'
@@ -231,6 +246,17 @@ def create_daily_summary_sheet(request, sheet_name):
             title_cell.value = 'SMALL BOILER'
             title_cell.alignment = Alignment(horizontal='center')
 
+            #product_type 1 of 3  (GAVRAN)
+            new_sheet.merge_cells(start_row=1, start_column=20, end_row=1, end_column=25)
+            title_cell = new_sheet.cell(row=1, column=20)
+            title_cell.value = 'GAVRAN'
+            title_cell.alignment = Alignment(horizontal='center')
+
+            #product_type 1 of 8  (DUCK)
+            new_sheet.merge_cells(start_row=1, start_column=27, end_row=1, end_column=32)
+            title_cell = new_sheet.cell(row=1, column=27)
+            title_cell.value = 'DUCK'
+            title_cell.alignment = Alignment(horizontal='center')
 
             # #BIRDS 1 (LARGE BOILER, SMALL BOILER, GAVRAN, KADAKNATH, BATER, DUCK)
             # new_sheet.merge_cells(start_row=1, start_column=6, end_row=1, end_column=10)
@@ -254,11 +280,20 @@ def create_daily_summary_sheet(request, sheet_name):
                 cell.alignment = Alignment(horizontal='center')
 
             # Set column widths for default columns
-            for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRST', default_columns):
+            for i, column_name in enumerate(default_columns):
+                column_letter = get_column_letter(i + 1)  # +1 because columns are 1-indexed
                 column = new_sheet.column_dimensions[column_letter]
                 # Adjust the width as needed
                 # Minimum width of 12
                 column.width = max(len(column_name) + 2, 12)
+
+
+            # # Set column widths for default columns
+            # for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRSTUVWXYZAAABACADAEAFAGAHAIAJAKALAMANAOAPAQARASATAUAVAWAXAYAZ', default_columns):
+            #     column = new_sheet.column_dimensions[column_letter]
+            #     # Adjust the width as needed
+            #     # Minimum width of 12
+            #     column.width = max(len(column_name) + 2, 12)
 
             # Define the financial year start and end dates
             financial_year_start = datetime(2023, 4, 1)
@@ -268,7 +303,10 @@ def create_daily_summary_sheet(request, sheet_name):
             current_date = financial_year_start
             while current_date <= financial_year_end:
                 # Create a new row for each date
-                row = [current_date.strftime('%d-%m-%Y'), '', '', '', '', 1, 1, '', '', '', '', '', 1, 2, '', '', '']
+                row = [current_date.strftime('%d-%m-%Y'), '', '', '', '', 1, 1, '', '', '', '', '', 1, 2, '', '', '', '','', 1, 3, '', '', '', '', '', 1, 8,
+                       '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+                       '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+                       '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
                 new_sheet.append(row)
 
                 # Move to the next date
@@ -302,6 +340,32 @@ def create_daily_summary_sheet(request, sheet_name):
                 sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2)>0,SUMIFS(Raw_data_01!J:J,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2),"")'
                 new_sheet[f'R{row}'] = sum_of_amount
 
+                # For product id=3
+                avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3)>0,AVERAGEIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3),"")'
+                new_sheet[f'V{row}'] = avg_weight
+
+                sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3)>0,SUMIFS(Raw_data_01!G:G,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3),"")'
+                new_sheet[f'W{row}'] = sum_of_quantity
+
+                avg_rate = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3)>0,AVERAGEIFS(Raw_data_01!I:I,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3),"")'
+                new_sheet[f'X{row}'] = avg_rate
+
+                sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3)>0,SUMIFS(Raw_data_01!J:J,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3),"")'
+                new_sheet[f'Y{row}'] = sum_of_amount
+
+                # For product id=8
+                avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8)>0,AVERAGEIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8),"")'
+                new_sheet[f'AC{row}'] = avg_weight
+
+                sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8)>0,SUMIFS(Raw_data_01!G:G,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8),"")'
+                new_sheet[f'AD{row}'] = sum_of_quantity
+
+                avg_rate = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8)>0,AVERAGEIFS(Raw_data_01!I:I,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8),"")'
+                new_sheet[f'AE{row}'] = avg_rate
+
+                sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8)>0,SUMIFS(Raw_data_01!J:J,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8),"")'
+                new_sheet[f'AF{row}'] = sum_of_amount
+
 
 
                 # # For product_type 2
@@ -323,7 +387,7 @@ def create_daily_summary_sheet(request, sheet_name):
                 new_sheet[f'B{row}'] = formula
 
             # Format the columns
-            columns_to_format = [ 'B', 'C', 'D', 'H', 'J', 'K', 'O', 'Q', 'R']
+            columns_to_format = [ 'B', 'C', 'D', 'H', 'J', 'K', 'O', 'Q', 'R', 'V', 'X', 'Y']
             for col_letter in columns_to_format:
                 # Format the columns to display two decimal places
                 for row in new_sheet.iter_rows(min_row=3, max_row=369, min_col=ord(col_letter) - 64, max_col=ord(col_letter) - 64):
