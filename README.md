@@ -1,184 +1,132 @@
 ```markdown
-# Excel API with Django
+# Project Documentation
 
-This is a simple Django API for creating, reading, updating, and deleting data in an Excel file. It provides endpoints to perform CRUD operations on data stored in an Excel spreadsheet.
+This documentation provides information about a Django project that offers RESTful API endpoints for managing data in an Excel file.
 
-## Getting Started
+## Setup and Installation
 
-To use this API, follow the instructions below:
+1. Clone the repository:
 
-### Prerequisites
-
-1. You need to have [Python](https://www.python.org/downloads/) installed on your system.
-2. Install the required Python packages using pip:
-
-   ```bash
-   pip install django openpyxl djangorestframework pandas
+   ```shell
+   git clone https://github.com/your/repository.git
+   cd your-repository
    ```
 
-### Installation
+2. Create a virtual environment and install the dependencies:
 
-1. Clone this repository to your local machine.
-
-   ```bash
-   git clone https://github.com/yourusername/excel-api.git
-   cd excel-api
-   ```
-
-2. Create a virtual environment (optional but recommended).
-
-   ```bash
+   ```shell
    python -m venv venv
-   source venv/bin/activate  # On Windows, use: venv\Scripts\activate
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
    ```
 
-3. Migrate the database and start the Django development server.
+3. Configure your database settings in `settings.py`. For this example, we're using SQLite as the default database.
 
-   ```bash
+4. Apply database migrations:
+
+   ```shell
    python manage.py migrate
+   ```
+
+5. Start the Django development server:
+
+   ```shell
    python manage.py runserver
    ```
 
-4. The API should now be accessible at `http://localhost:8000/`.
-
 ## API Endpoints
 
-- `POST /api/excel/create/{sheet_name}`: Create new data in the Excel sheet.
-- `GET /api/excel/read/{sheet_name}`: Read data from the Excel sheet.
-- `PUT /api/excel/update/{sheet_name}`: Update existing data in the Excel sheet.
-- `DELETE /api/excel/delete/{sheet_name}`: Delete data from the Excel sheet.
+### Create Excel Data
 
-## Example Usage
+This endpoint allows you to add data to an Excel file. The Excel file is expected to have a sheet named 'main.xlsx' to store the data.
 
-### Create Data (POST)
+- **URL:** `/create_excel/<str:sheet_name>/`
 
-```http
-POST /api/excel/create/mysheetname
-Content-Type: application/json
+- **Method:** `POST`
 
-{
-    "json_objects": [
-        {
-            "name": "John Doe",
-            "amount": 100,
-            "pending": false
-        },
-        {
-            "name": "Alice Smith",
-            "amount": 200,
-            "pending": true
-        }
-    ]
-}
-```
+- **Request Body:**
 
-### Read Data (GET)
+  ```json
+  {
+      "json_objects": [
+          {
+              "shop_code": "A001",
+              "product_type": "ACCOUNT",
+              "product_id": 1,
+              "weight": 10.5,
+              "quantity": 100,
+              "daily_rate": 150.0,
+              "rate": 15.0
+          },
+          // Add more JSON objects as needed
+      ]
+  }
+  ```
 
-```http
-GET /api/excel/read/mysheetname
-```
+- **Response:**
 
-### Update Data (PUT)
+  - `200 OK` on successful data insertion.
 
-```http
-PUT /api/excel/update/mysheetname
-Content-Type: application/json
+  - `400 Bad Request` on invalid input data.
 
-{
-    "json_objects": [
-        {
-            "sr_no": 1,
-            "name": "Updated Name",
-            "amount": 300,
-            "pending": true
-        }
-    ]
-}
-```
+### Create Daily Summary Sheet
 
-### Delete Data (DELETE)
+This endpoint generates a daily summary sheet in the 'main.xlsx' Excel file. The summary sheet contains formulas to calculate average weight, total quantity, average rate, and total amount for different product types.
 
-```http
-DELETE /api/excel/delete/mysheetname
-Content-Type: application/json
+- **URL:** `/create_daily_summary_sheet/<str:sheet_name>/`
 
-{
-    "sr_no": 1
-}
-```
+- **Method:** `POST`
 
-## Error Handling
+- **Request Body:**
 
-The API provides error responses for various scenarios, such as invalid data, missing sheets, or failed operations. Be sure to check the response status and message for details.
+  ```json
+  {}  // Empty request body
+  ```
 
-## Contributing
+- **Response:**
 
-Feel free to contribute to this project by opening issues, suggesting improvements, or submitting pull requests.
+  - `200 OK` on successful summary sheet creation.
 
-## License
+  - `400 Bad Request` if the sheet already exists or an error occurs.
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-```
+## Usage Example with Postman
 
-Now, for a Postman example, you can use the following requests:
+1. Start your Django server:
 
-1. Create Data (POST):
+   ```shell
+   python manage.py runserver
+   ```
 
-   - Method: POST
-   - URL: `http://localhost:8000/api/excel/create/mysheetname`
-   - Headers: `Content-Type: application/json`
-   - Body (raw JSON):
-     ```json
-     {
-         "json_objects": [
-             {
-                 "name": "John Doe",
-                 "amount": 100,
-                 "pending": false
-             },
-             {
-                 "name": "Alice Smith",
-                 "amount": 200,
-                 "pending": true
-             }
-         ]
-     }
-     ```
+2. Use Postman to test the API endpoints.
 
-2. Read Data (GET):
+   - **Create Excel Data:**
 
-   - Method: GET
-   - URL: `http://localhost:8000/api/excel/read/mysheetname`
+     - URL: `http://localhost:8000/create_excel/sheet_name/`
+     - Method: `POST`
+     - Request Body: Provide a JSON object as shown in the "Request Body" section above.
+     - Check the response to ensure that the data is successfully inserted.
 
-3. Update Data (PUT):
+   - **Create Daily Summary Sheet:**
 
-   - Method: PUT
-   - URL: `http://localhost:8000/api/excel/update/mysheetname`
-   - Headers: `Content-Type: application/json`
-   - Body (raw JSON):
-     ```json
-     {
-         "json_objects": [
-             {
-                 "sr_no": 1,
-                 "name": "Updated Name",
-                 "amount": 300,
-                 "pending": true
-             }
-         ]
-     }
-     ```
+     - URL: `http://localhost:8000/create_daily_summary_sheet/sheet_name/`
+     - Method: `POST`
+     - Request Body: An empty JSON object.
+     - Check the response to confirm that the summary sheet is created with formulas.
 
-4. Delete Data (DELETE):
+## Excel File Structure
 
-   - Method: DELETE
-   - URL: `http://localhost:8000/api/excel/delete/mysheetname`
-   - Headers: `Content-Type: application/json`
-   - Body (raw JSON):
-     ```json
-     {
-         "sr_no": 1
-     }
-     ```
+- The Excel file should have a sheet named 'main.xlsx' for data storage and summary sheet creation.
 
-You can import these requests into Postman and use them to interact with your API. Make sure to adjust the URLs and request data as needed for your specific use case.
+- The 'main.xlsx' sheet should have the following columns: date, time, shop_code, product_type, product_id, weight, quantity, daily_rate, rate, and amount.
+
+- The 'main.xlsx' sheet should follow the defined structure for different product types as described in the code.
+
+## Notes
+
+- Please adjust the database settings, such as database type and connection details, in the project's `settings.py`.
+
+- For production use, consider deploying the project on a production-ready web server and database.
+
+- This documentation assumes that you have a basic understanding of Python and Django.
+
+Feel free to adapt this README.md to your project's specific requirements and add any additional information or instructions that your users may need. Make sure to keep it updated as your project evolves.

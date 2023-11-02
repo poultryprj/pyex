@@ -268,19 +268,6 @@ def create_daily_summary_sheet(request, sheet_name):
                 title_cell.value = product_type
                 title_cell.alignment = Alignment(horizontal='center')
 
-            # #BIRDS 1 (LARGE BOILER, SMALL BOILER, GAVRAN, KADAKNATH, BATER, DUCK)
-            # new_sheet.merge_cells(start_row=1, start_column=6, end_row=1, end_column=10)
-            # title_cell = new_sheet.cell(row=1, column=6)
-            # title_cell.value = 'SMALL BOILER'
-            # title_cell.alignment = Alignment(horizontal='center')
-
-            # EGGS 2 (WHITE EGGS, BROWN)
-
-            # new_sheet.merge_cells(start_row=1, start_column=12, end_row=1, end_column=15)
-            # title_cell = new_sheet.cell(row=1, column=12)
-            # title_cell.value = 'EGGS'
-            # title_cell.alignment = Alignment(horizontal='center')
-
             for col_num, header in enumerate(default_columns, start=1):
                 new_sheet.cell(row=2, column=col_num, value=header)
 
@@ -297,13 +284,6 @@ def create_daily_summary_sheet(request, sheet_name):
                 # Adjust the width as needed
                 # Minimum width of 12
                 column.width = max(len(column_name) + 2, 12)
-
-            # # Set column widths for default columns
-            # for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRSTUVWXYZAAABACADAEAFAGAHAIAJAKALAMANAOAPAQARASATAUAVAWAXAYAZ', default_columns):
-            #     column = new_sheet.column_dimensions[column_letter]
-            #     # Adjust the width as needed
-            #     # Minimum width of 12
-            #     column.width = max(len(column_name) + 2, 12)
 
             # Define the financial year start and end dates
             financial_year_start = datetime(2023, 4, 1)
@@ -415,7 +395,6 @@ def create_daily_summary_sheet(request, sheet_name):
                 for row in new_sheet.iter_rows(min_row=3, max_row=369, min_col=col_index, max_col=col_index):
                     for cell in row:
                         cell.number_format = '0.00'
-
 
             # Freeze the top row (column names) when scrolling
             new_sheet.freeze_panes = "A3"
