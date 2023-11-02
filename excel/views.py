@@ -317,92 +317,105 @@ def create_daily_summary_sheet(request, sheet_name):
                        '', '', '', '', '', 1, 6, '', '', '', '', '', 1, 7, '', '', '', '', '', 2, 4, '', '', '', '', 2, 5, '', '', '', '',
                        3, 9, '', '', '', '', '', 3, 10, '', '', '', '', '', 3, 14, '', '', '', '', '', 3, 13, '', '', '', '', '', 3, 11, '', '', '', '', '', 3, 15, '', '', '', '', '', 3, 12,
                        '', '', '', '', 4, 16, '', '', '', '', '', 4, 17, '', '', '', '', '', 5, 18, '', '', '', '', '', 5, 19, '', '', '', '', 5, 20, '', '', '', '', '', 5, 21, '', '', '', '', '',
-                       6, 22, '', '', '', '', 6, 23, '', '', '', '', 6, 24, '', '', '', '', 7, 25, '', '', '', '', 7, 26, '', '', '', '', 7, 27, '', '', '', '', 7, 28, '', '', '', '']
+                       6, 22, '', '', '', '', 6, 23, '', '', '', '', 6, 24, '', '', '', '', 7, 25, '', '', '', '', 7, 26, '', '', '', '', 7, 27, '', '', '', '', 7, 28, '', '', '']
                 new_sheet.append(row)
 
                 # Move to the next date
                 current_date += timedelta(days=1)
             workbook.save(file_path)
-            # Add the formulas to the "G" column (weight column) from $A3 to $A368
+
+
+            weight_products = { 
+                # For weight products
+                1: ('H', 'I', 'J', 'K'),     # 1 of 1
+                2: ('O', 'P', 'Q', 'R'),     # 1 of 2
+                3: ('V', 'W', 'X', 'Y'),     # 1 of 3
+                8: ('AC', 'AD', 'AE', 'AF'), # 1 of 8
+                6: ('AJ', 'AK', 'AL', 'AM'), # 1 of 6
+                7: ('AQ', 'AR', 'AS', 'AT'), # 1 of 7
+                9: ('BJ', 'BK', 'BL', 'BM'), # 3 of 9 surmay
+                10: ('BQ', 'BR', 'BS', 'BT'), # 3 of 10 paplet
+                14: ('BX', 'BY', 'BZ', 'CA'), # 3 of 14 bumla
+                13: ('CE', 'CF', 'CG', 'CH'), # 3 of 13 prawns
+                11: ('CL', 'CM', 'CN', 'CO'), # 3 of 11 bangda
+                15: ('CS', 'CT', 'CU', 'CV'), # 3 of 15 rohu
+                16: ('DF', 'DG', 'DH', 'DI'), # 4 of 16 mendni
+                17: ('DM', 'DN', 'DO', 'DP'), # 4 of 17 sheli
+                18: ('DT', 'DU', 'DV', 'DW'), # 5 of 18 pkd chicken
+                20: ('EG', 'EH', 'EI', 'EJ'), # 5 of 20 pkd fish
+                21: ('EN', 'EO', 'EP', 'EQ'), # 5 of 21 pkd mutton
+
+
+            }
+
+            quantity_products = {
+                # For Quantity Products
+                4: ('AX', 'AY', 'AZ'), # 2 of 4 WHITE EGGS
+                5: ('BD', 'BE', 'BF'), # 2 of 5 BROWN EGGS
+                12: ('CZ', 'DA', 'DB'), # 3 of 12 CRAB
+                19: ('EA', 'EB', 'EC'), # 5 of 19 PKD EGGS
+                22: ('EU', 'EV', 'EW'), # 6 of 22 DOG FOOD
+                23: ('FA', 'FB', 'FC'), # 6 of 23 CAT FOOD
+                24: ('FG', 'FH', 'FI'), # 6 of 24 FISH FOOD
+                25: ('FM', 'FN', 'FO'), # 7 of 25 MUTTON MASALA
+                26: ('FS', 'FT', 'FU'), # 7 of 26 EGGS MASALA
+                27: ('FY', 'FZ', 'GA'), # 7 of 27 FISH MASALA
+                28: ('GE', 'GF', 'GG'), # 7 of 28 KOLHAPURI MASALA
+            }
+
+            for product_id, (weight_col, quantity_col, rate_col, amount_col) in weight_products.items():
+                for row in range(3, 369): 
+                        # For Weight Products
+                        avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,{product_id})>0,SUMIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,{product_id}), "")'
+                        new_sheet[f'{weight_col}{row}'] = avg_weight
+
+                        sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,{product_id})>0,SUMIFS(Raw_data_01!G:G,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,{product_id}), "")'
+                        new_sheet[f'{quantity_col}{row}'] = sum_of_quantity
+
+                        avg_rate = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,{product_id})>0,AVERAGEIFS(Raw_data_01!I:I,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,{product_id}), "")'
+                        new_sheet[f'{rate_col}{row}'] = avg_rate
+
+                        sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,{product_id})>0,SUMIFS(Raw_data_01!J:J,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,{product_id}), "")'
+                        new_sheet[f'{amount_col}{row}'] = sum_of_amount
+
+            for product_id, (quantity_col, rate_col, amount_col) in quantity_products.items():
+                for row in range(3, 369):
+                    # For Quantity Products
+                    sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,{product_id})>0,SUMIFS(Raw_data_01!G:G,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,{product_id}),"")'
+                    new_sheet[f'{quantity_col}{row}'] = sum_of_quantity
+
+                    avg_rate = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,{product_id})>0,AVERAGEIFS(Raw_data_01!I:I,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,{product_id}),"")'
+                    new_sheet[f'{rate_col}{row}'] = avg_rate
+
+                    sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,{product_id})>0,SUMIFS(Raw_data_01!J:J,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,{product_id}),"")'
+                    new_sheet[f'{amount_col}{row}'] = sum_of_amount
+
+            # cloasing balance
             for row in range(3, 369):
-                # For product id=1
-                avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1)>0,SUMIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1),"")'
-                new_sheet[f'H{row}'] = avg_weight
-
-                sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1)>0,SUMIFS(Raw_data_01!G:G,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1),"")'
-                new_sheet[f'I{row}'] = sum_of_quantity
-
-                avg_rate = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1)>0,AVERAGEIFS(Raw_data_01!I:I,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1),"")'
-                new_sheet[f'J{row}'] = avg_rate
-
-                sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1)>0,SUMIFS(Raw_data_01!J:J,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1),"")'
-                new_sheet[f'K{row}'] = sum_of_amount
-
-                # For product id=2
-                avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2)>0,SUMIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2),"")'
-                new_sheet[f'O{row}'] = avg_weight
-
-                sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2)>0,SUMIFS(Raw_data_01!G:G,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2),"")'
-                new_sheet[f'P{row}'] = sum_of_quantity
-
-                avg_rate = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2)>0,AVERAGEIFS(Raw_data_01!I:I,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2),"")'
-                new_sheet[f'Q{row}'] = avg_rate
-
-                sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2)>0,SUMIFS(Raw_data_01!J:J,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2),"")'
-                new_sheet[f'R{row}'] = sum_of_amount
-
-                # For product id=3
-                avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3)>0,SUMIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3),"")'
-                new_sheet[f'V{row}'] = avg_weight
-
-                sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3)>0,SUMIFS(Raw_data_01!G:G,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3),"")'
-                new_sheet[f'W{row}'] = sum_of_quantity
-
-                avg_rate = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3)>0,AVERAGEIFS(Raw_data_01!I:I,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3),"")'
-                new_sheet[f'X{row}'] = avg_rate
-
-                sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3)>0,SUMIFS(Raw_data_01!J:J,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3),"")'
-                new_sheet[f'Y{row}'] = sum_of_amount
-
-                # For product id=8
-                avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8)>0,SUMIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8),"")'
-                new_sheet[f'AC{row}'] = avg_weight
-
-                sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8)>0,SUMIFS(Raw_data_01!G:G,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8),"")'
-                new_sheet[f'AD{row}'] = sum_of_quantity
-
-                avg_rate = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8)>0,AVERAGEIFS(Raw_data_01!I:I,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8),"")'
-                new_sheet[f'AE{row}'] = avg_rate
-
-                sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8)>0,SUMIFS(Raw_data_01!J:J,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8),"")'
-                new_sheet[f'AF{row}'] = sum_of_amount
-
-                # # For product_type 2
-                # sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2)>0,SUMIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2),"")'
-                # new_sheet[f'M{row}'] = sum_of_quantity
-
-                # avg_rate = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2)>0,AVERAGEIFS(Raw_data_01!H:H,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2),"")'
-                # new_sheet[f'N{row}'] = avg_rate
-
-                # sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2)>0,SUMIFS(Raw_data_01!I:I,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2),"")'
-                # new_sheet[f'O{row}'] = sum_of_amount
-
-                closing_balance = f'=SUM(K{row},R{row},Y{row},AF{row},B{row}) - C{row}'
+                closing_balance = f'=SUM(B{row},K{row},R{row},Y{row},AF{row},AM{row},AT{row},BM{row},BT{row},CA{row},CH{row},CO{row},CV{row},DI{row},DP{row},DW{row},EJ{row},EQ{row},AZ{row},BF{row},DB{row},EC{row},EW{row},FC{row},FI{row},FO{row},FU{row},GA{row},GG{row}) - C{row}'
                 new_sheet[f'D{row}'] = closing_balance
 
             # Add the formula to the "B" column (opening_balance column) from B4 to B368
             for row in range(4, 369):
                 formula = f'=IF(D{row - 1}<>0, D{row - 1}, IFERROR(INDEX(D3:D${row - 1}, MATCH(1, D3:D${row - 1}<>0, 0)), LOOKUP(2, 1/(D3:D${row - 1}<>0), D3:D${row - 1})))'
                 new_sheet[f'B{row}'] = formula
+            # Define a function to convert Excel column letters to column index
+            def col_letter_to_index(col_letter):
+                result = 0
+                for letter in col_letter:
+                    result = result * 26 + (ord(letter) - ord('A') + 1)
+                return result
 
             # Format the columns
-            columns_to_format = ['B', 'C', 'D', 'H',
-                                 'J', 'K', 'O', 'Q', 'R', 'V', 'X', 'Y']
+            columns_to_format = ['B', 'C', 'D', 'H', 'J', 'K', 'O', 'Q', 'R', 'V', 'X', 'Y', 'AC', 'AE', 'AF', 'AJ', 'AL', 'AM', 'AQ', 'AS', 'AT', 'AY', 'AZ', 'BE', 'BF', 'BJ', 'BL', 'BM', 'BQ', 'BS', 'BT', 'BX', 'BZ', 'CA', 'CE', 'CG', 'CH', 'CL', 'CN', 'CO', 'CS', 'CU', 'CV', 'DA', 'DV', 'DF', 'DH', 'DI', 'DM', 'DO', 'DP', 'DT', 'DV', 'DW', 'EB', 'EC', 'EG', 'EI', 'EJ', 'EN', 'EP', 'EQ', 'EV', 'EW', 'FB', 'FC', 'FH', 'FI', 'FN', 'FO', 'FT', 'FU', 'FZ', 'GA', 'GF', 'GG']
+
             for col_letter in columns_to_format:
+                col_index = col_letter_to_index(col_letter)
                 # Format the columns to display two decimal places
-                for row in new_sheet.iter_rows(min_row=3, max_row=369, min_col=ord(col_letter) - 64, max_col=ord(col_letter) - 64):
+                for row in new_sheet.iter_rows(min_row=3, max_row=369, min_col=col_index, max_col=col_index):
                     for cell in row:
                         cell.number_format = '0.00'
+
 
             # Freeze the top row (column names) when scrolling
             new_sheet.freeze_panes = "A3"
