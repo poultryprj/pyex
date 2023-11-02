@@ -18,6 +18,7 @@ from openpyxl.worksheet.views import SheetView, Selection
 import os
 from openpyxl.utils import get_column_letter
 
+
 @api_view(['POST'])
 def excel_view(request, sheet_name):
     if request.method == 'POST':
@@ -32,7 +33,8 @@ def excel_view(request, sheet_name):
                 return Response({"error": "JSON objects are required."}, status=status.HTTP_400_BAD_REQUEST)
 
             # Define the default columns outside of the if-else block
-            default_columns = ['   date   ', '   time   ', 'shop_code', 'product_type', 'product_id',  'weight', 'quantity', 'daily_rate', 'rate', 'amount']
+            default_columns = ['   date   ', '   time   ', 'shop_code', 'product_type',
+                               'product_id',  'weight', 'quantity', 'daily_rate', 'rate', 'amount']
 
             # Load the Excel workbook using openpyxl
             workbook = load_workbook(filename=file_path)
@@ -151,8 +153,8 @@ def excel_view(request, sheet_name):
                 for i in range(3, sheet.max_row + 1):
                     # Replace {i} with the current row number
                     row_formula = formula.format(i=i)
-                    sheet.cell(row=i, column=default_columns.index("amount") + 1).value = row_formula
-
+                    sheet.cell(row=i, column=default_columns.index(
+                        "amount") + 1).value = row_formula
 
                 # Save the Excel file again after applying the formula
                 workbook.save(file_path)
@@ -165,6 +167,8 @@ def excel_view(request, sheet_name):
 
 
 ################################
+
+
 @api_view(['POST'])
 def create_daily_summary_sheet(request, sheet_name):
     if request.method == 'POST':
@@ -187,76 +191,82 @@ def create_daily_summary_sheet(request, sheet_name):
             # Create a new sheet with the provided sheet_name
             new_sheet = workbook.create_sheet(title=sheet_name)
 
-            # Define the default columns and add them to the A2 row
+            # # Define the default columns and add them to the A2 row
+            # Define the product types and their respective column ranges
+            product_types = {
+                'ACCOUNT': (1, 4),
+                'LARGE BOILER': (6, 11),
+                'SMALL BOILER': (13, 18),
+                'GAVRAN': (20, 25),
+                'DUCK': (27, 32),
+                'KADAKNATH': (34, 39),
+                'BATER' : (41,46),
+                'WHITE EGGS' : (48,52),
+                'BROWN EGGS' : (54,58),
+                'SURMAY' : (60,65),
+                'PAPLETE':(67,72),
+                'BUMLA' : (74,79),    #3,14 WT
+                'PRAWNS' : (81,86),
+                'BANGDA' : (88,93),
+                'ROHU' : (95,100),
+                'CRAB' : (102,106),   #3,12
+                'MENDNI' : (108,113),
+                'SHELI' : (115,120),
+                'PACKED CHICKEN' : (122,127),
+                'PACKED EGGS' : (129,133),   #5,19
+                'PACKED FISH' : (135,140),
+                'PACKED MUTTON' : (142,147),
+                'DOG FOOD' : (149,153),  #6,22
+                'CAT FOOD' : (155,159),
+                'FISH FOOD' : (161,165),
+                'MUTTON MASALA' : (167,171),
+                'EGGS MASALA' : (173,177),
+                'FISH MASALA' : (179,183),
+                'KOLHAPURI MASALA' : (185,189),
+
+                # Add more product types as needed
+            }
+
             default_columns = [
                 'Date',
                 'opening_balance',
                 'paid_amount',
                 'closing_balance',
-                '',
-                'product_type',
-                'product_id',
-                'weight',
-                'quantity',
-                'rate',
-                'amount',
-                '',
-                'product_type',
-                'product_id',
-                'weight',
-                'quantity',
-                'rate',
-                'amount',
-                '',
-                'product_type',
-                'product_id',
-                'weight',
-                'quantity',
-                'rate',
-                'amount',
-                '',
-                'product_type',
-                'product_id',
-                'weight',
-                'quantity',
-                'rate',
-                'amount',
-                '',                   
-                # 'product_type',
-                # 'quantity',
-                # 'rate',
-                # 'amount',
+                ''
             ]
 
-            # Merge cells for the title ACCOUNT
-            new_sheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=4)
-            title_cell = new_sheet.cell(row=1, column=1)
-            title_cell.value = 'DAILY ACCOUNT SUMMARY'
-            title_cell.alignment = Alignment(horizontal='center')
+            total_products = [1, 2, 3, 8, 6, 7, 4, 5, 9, 10, 14, 13, 11,
+                              15, 12, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28]
+            list_1 = [4, 5, 12, 19, 22, 23, 24, 25, 26, 27, 28]
 
-            # product_type 1 of 1 (LARGE BOILER, GAVRAN, KADAKNATH, BATER, DUCK)
-            new_sheet.merge_cells(start_row=1, start_column=6, end_row=1, end_column=11)
-            title_cell = new_sheet.cell(row=1, column=6)
-            title_cell.value = 'LARGE BOILER'
-            title_cell.alignment = Alignment(horizontal='center')
+            for product_id in total_products:
+                if product_id not in list_1:
+                    default_columns.extend([
+                        'product_type',
+                        'product_id',
+                        'weight',
+                        'quantity',
+                        'rate',
+                        'amount',
+                        ''
+                    ])
+                if product_id in list_1:
+                    default_columns.extend([
+                        'product_type',
+                        'product_id',
+                        'quantity',
+                        'rate',
+                        'amount',
+                        ''
+                    ])
 
-            #product_type 1 of 2  (SMALL BOILER)
-            new_sheet.merge_cells(start_row=1, start_column=13, end_row=1, end_column=18)
-            title_cell = new_sheet.cell(row=1, column=13)
-            title_cell.value = 'SMALL BOILER'
-            title_cell.alignment = Alignment(horizontal='center')
-
-            #product_type 1 of 3  (GAVRAN)
-            new_sheet.merge_cells(start_row=1, start_column=20, end_row=1, end_column=25)
-            title_cell = new_sheet.cell(row=1, column=20)
-            title_cell.value = 'GAVRAN'
-            title_cell.alignment = Alignment(horizontal='center')
-
-            #product_type 1 of 8  (DUCK)
-            new_sheet.merge_cells(start_row=1, start_column=27, end_row=1, end_column=32)
-            title_cell = new_sheet.cell(row=1, column=27)
-            title_cell.value = 'DUCK'
-            title_cell.alignment = Alignment(horizontal='center')
+            # Merge cells and set titles for each product type dynamically
+            for product_type, (start_col, end_col) in product_types.items():
+                new_sheet.merge_cells(
+                    start_row=1, start_column=start_col, end_row=1, end_column=end_col)
+                title_cell = new_sheet.cell(row=1, column=start_col)
+                title_cell.value = product_type
+                title_cell.alignment = Alignment(horizontal='center')
 
             # #BIRDS 1 (LARGE BOILER, SMALL BOILER, GAVRAN, KADAKNATH, BATER, DUCK)
             # new_sheet.merge_cells(start_row=1, start_column=6, end_row=1, end_column=10)
@@ -264,7 +274,7 @@ def create_daily_summary_sheet(request, sheet_name):
             # title_cell.value = 'SMALL BOILER'
             # title_cell.alignment = Alignment(horizontal='center')
 
-            #EGGS 2 (WHITE EGGS, BROWN)
+            # EGGS 2 (WHITE EGGS, BROWN)
 
             # new_sheet.merge_cells(start_row=1, start_column=12, end_row=1, end_column=15)
             # title_cell = new_sheet.cell(row=1, column=12)
@@ -281,12 +291,12 @@ def create_daily_summary_sheet(request, sheet_name):
 
             # Set column widths for default columns
             for i, column_name in enumerate(default_columns):
-                column_letter = get_column_letter(i + 1)  # +1 because columns are 1-indexed
+                # +1 because columns are 1-indexed
+                column_letter = get_column_letter(i + 1)
                 column = new_sheet.column_dimensions[column_letter]
                 # Adjust the width as needed
                 # Minimum width of 12
                 column.width = max(len(column_name) + 2, 12)
-
 
             # # Set column widths for default columns
             # for column_letter, column_name in zip('ABCDEFGHIJKLMNOPQRSTUVWXYZAAABACADAEAFAGAHAIAJAKALAMANAOAPAQARASATAUAVAWAXAYAZ', default_columns):
@@ -303,19 +313,20 @@ def create_daily_summary_sheet(request, sheet_name):
             current_date = financial_year_start
             while current_date <= financial_year_end:
                 # Create a new row for each date
-                row = [current_date.strftime('%d-%m-%Y'), '', '', '', '', 1, 1, '', '', '', '', '', 1, 2, '', '', '', '','', 1, 3, '', '', '', '', '', 1, 8,
-                       '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-                       '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-                       '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
+                row = [current_date.strftime('%d-%m-%Y'), '', '', '', '', 1, 1, '', '', '', '', '', 1, 2, '', '', '', '', '', 1, 3, '', '', '', '', '', 1, 8,
+                       '', '', '', '', '', 1, 6, '', '', '', '', '', 1, 7, '', '', '', '', '', 2, 4, '', '', '', '', 2, 5, '', '', '', '',
+                       3, 9, '', '', '', '', '', 3, 10, '', '', '', '', '', 3, 14, '', '', '', '', '', 3, 13, '', '', '', '', '', 3, 11, '', '', '', '', '', 3, 15, '', '', '', '', '', 3, 12,
+                       '', '', '', '', 4, 16, '', '', '', '', '', 4, 17, '', '', '', '', '', 5, 18, '', '', '', '', '', 5, 19, '', '', '', '', 5, 20, '', '', '', '', '', 5, 21, '', '', '', '', '',
+                       6, 22, '', '', '', '', 6, 23, '', '', '', '', 6, 24, '', '', '', '', 7, 25, '', '', '', '', 7, 26, '', '', '', '', 7, 27, '', '', '', '', 7, 28, '', '', '', '']
                 new_sheet.append(row)
 
                 # Move to the next date
                 current_date += timedelta(days=1)
-
+            workbook.save(file_path)
             # Add the formulas to the "G" column (weight column) from $A3 to $A368
             for row in range(3, 369):
                 # For product id=1
-                avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1)>0,AVERAGEIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1),"")'
+                avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1)>0,SUMIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1),"")'
                 new_sheet[f'H{row}'] = avg_weight
 
                 sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1)>0,SUMIFS(Raw_data_01!G:G,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,1),"")'
@@ -328,7 +339,7 @@ def create_daily_summary_sheet(request, sheet_name):
                 new_sheet[f'K{row}'] = sum_of_amount
 
                 # For product id=2
-                avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2)>0,AVERAGEIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2),"")'
+                avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2)>0,SUMIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2),"")'
                 new_sheet[f'O{row}'] = avg_weight
 
                 sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2)>0,SUMIFS(Raw_data_01!G:G,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,2),"")'
@@ -341,7 +352,7 @@ def create_daily_summary_sheet(request, sheet_name):
                 new_sheet[f'R{row}'] = sum_of_amount
 
                 # For product id=3
-                avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3)>0,AVERAGEIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3),"")'
+                avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3)>0,SUMIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3),"")'
                 new_sheet[f'V{row}'] = avg_weight
 
                 sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3)>0,SUMIFS(Raw_data_01!G:G,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,3),"")'
@@ -354,7 +365,7 @@ def create_daily_summary_sheet(request, sheet_name):
                 new_sheet[f'Y{row}'] = sum_of_amount
 
                 # For product id=8
-                avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8)>0,AVERAGEIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8),"")'
+                avg_weight = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8)>0,SUMIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8),"")'
                 new_sheet[f'AC{row}'] = avg_weight
 
                 sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8)>0,SUMIFS(Raw_data_01!G:G,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8),"")'
@@ -366,8 +377,6 @@ def create_daily_summary_sheet(request, sheet_name):
                 sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8)>0,SUMIFS(Raw_data_01!J:J,Raw_data_01!A:A,$A{row},Raw_data_01!E:E,8),"")'
                 new_sheet[f'AF{row}'] = sum_of_amount
 
-
-
                 # # For product_type 2
                 # sum_of_quantity = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2)>0,SUMIFS(Raw_data_01!F:F,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2),"")'
                 # new_sheet[f'M{row}'] = sum_of_quantity
@@ -378,8 +387,8 @@ def create_daily_summary_sheet(request, sheet_name):
                 # sum_of_amount = f'=IF(COUNTIFS(Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2)>0,SUMIFS(Raw_data_01!I:I,Raw_data_01!A:A,$A{row},Raw_data_01!D:D,2),"")'
                 # new_sheet[f'O{row}'] = sum_of_amount
 
-                # closing_balance = f'=SUM(J{row},O{row},B{row}) - C{row}'
-                # new_sheet[f'D{row}'] = closing_balance
+                closing_balance = f'=SUM(K{row},R{row},Y{row},AF{row},B{row}) - C{row}'
+                new_sheet[f'D{row}'] = closing_balance
 
             # Add the formula to the "B" column (opening_balance column) from B4 to B368
             for row in range(4, 369):
@@ -387,7 +396,8 @@ def create_daily_summary_sheet(request, sheet_name):
                 new_sheet[f'B{row}'] = formula
 
             # Format the columns
-            columns_to_format = [ 'B', 'C', 'D', 'H', 'J', 'K', 'O', 'Q', 'R', 'V', 'X', 'Y']
+            columns_to_format = ['B', 'C', 'D', 'H',
+                                 'J', 'K', 'O', 'Q', 'R', 'V', 'X', 'Y']
             for col_letter in columns_to_format:
                 # Format the columns to display two decimal places
                 for row in new_sheet.iter_rows(min_row=3, max_row=369, min_col=ord(col_letter) - 64, max_col=ord(col_letter) - 64):
